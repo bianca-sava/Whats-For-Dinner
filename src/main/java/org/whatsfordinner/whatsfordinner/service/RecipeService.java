@@ -1,0 +1,105 @@
+package org.whatsfordinner.whatsfordinner.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.whatsfordinner.whatsfordinner.dto.RecipeIngredientDTO;
+import org.whatsfordinner.whatsfordinner.dto.RecipeResponseDTO;
+import org.whatsfordinner.whatsfordinner.dto.RecipeSearchRequestDTO;
+import org.whatsfordinner.whatsfordinner.model.Recipe;
+import org.whatsfordinner.whatsfordinner.model.RecipeIngredient;
+import org.whatsfordinner.whatsfordinner.model.User;
+import org.whatsfordinner.whatsfordinner.model.UserFridge;
+import org.whatsfordinner.whatsfordinner.repository.RecipeRepository;
+import org.whatsfordinner.whatsfordinner.repository.UserFridgeRepository;
+import org.whatsfordinner.whatsfordinner.repository.UserRepository;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class RecipeService {
+
+    private final RecipeRepository recipeRepository;
+    private final UserFridgeRepository userFridgeRepository;
+    private final UserRepository userRepository;
+
+    private User getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public List<RecipeResponseDTO> searchRecipes(RecipeSearchRequestDTO request) {
+        User user = getCurrentUser();
+
+        // ingredientele pe care le are userul in frigider
+        Set<Long> fridgeIngredientIds = userFridgeRepository.findByUser(user)
+                .stream()
+                .map(UserFridge -> UserFridge.getIngredient().getId())
+                .collect(Collectors.toSet());
+
+        int maxMissing = request.getMaxMissingIngredients() != null
+                ? request.getMaxMissingIngredients()
+                : 0;
+
+        return recipeRepository.findAll()
+                .stream()
+                .filter(recipe -> matchesMealType(recipe, request.getMealType()))
+                .filter(recipe -> matchesDietType(recipe, request.getDietType()))
+                .filter(recipe -> countMissingIngredients(recipe, fridgeIngredientIds) <= maxMissing)
+                .map(recipe -> mapToDTO(recipe, fridgeIngredientIds))
+                .collect(Collectors.toList());
+    }
+
+    private boolean matchesMealType(Recipe recipe, Recipe.MealType mealType) {
+        if (mealType == null) return true;
+        return recipe.getMealType() == mealType;
+    }
+
+    private boolean matchesDietType(Recipe recipe, Recipe.DietType dietType) {
+        if (dietType == null) return true;
+        return recipe.getDietType() == dietType;
+    }
+
+    private long countMissingIngredients(Recipe recipe, Set<Long> fridgeIngredientIds) {
+        return recipe.getRecipeIngredients()
+                .stream()
+                .filter(ri -> !ri.getIsOptional())
+                .filter(ri -> !fridgeIngredientIds.contains(ri.getIngredient().getId()))
+                .count();
+    }
+
+    private RecipeResponseDTO mapToDTO(Recipe recipe, Set<Long> fridgeIngredientIds) {
+        List<String> missingIngredients = recipe.getRecipeIngredients()
+                .stream()
+                .filter(ri -> !ri.getIsOptional())
+                .filter(ri -> !fridgeIngredientIds.contains(ri.getIngredient().getId()))
+                .map(ri -> ri.getIngredient().getName())
+                .collect(Collectors.toList());
+
+        List<RecipeIngredientDTO> ingredients = recipe.getRecipeIngredients()
+                .stream()
+                .map(ri -> RecipeIngredientDTO.builder()
+                        .ingredientName(ri.getIngredient().getName())
+                        .quantity(ri.getQuantity())
+                        .isOptional(ri.getIsOptional())
+                        .build())
+                .collect(Collectors.toList());
+
+        return RecipeResponseDTO.builder()
+                .id(recipe.getId())
+                .name(recipe.getName())
+                .description(recipe.getDescription())
+                .instructions(recipe.getInstructions())
+                .prepTime(recipe.getPrepTime())
+                .servings(recipe.getServings())
+                .mealType(recipe.getMealType())
+                .dietType(recipe.getDietType())
+                .ingredients(ingredients)
+                .missingIngredients(missingIngredients)
+                .build();
+    }
+}
