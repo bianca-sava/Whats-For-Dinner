@@ -40,4 +40,9 @@ public class FridgeController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/bulk")
+    public ResponseEntity<List<FridgeItemResponseDTO>> addMultiple(@RequestBody List<Long> ingredientIds) {
+        return ResponseEntity.ok(fridgeService.addMultipleToFridge(ingredientIds));
+    }
+
 }
