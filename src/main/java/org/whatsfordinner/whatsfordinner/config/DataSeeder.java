@@ -3,9 +3,11 @@ package org.whatsfordinner.whatsfordinner.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.whatsfordinner.whatsfordinner.model.Allergy;
 import org.whatsfordinner.whatsfordinner.model.Ingredient;
 import org.whatsfordinner.whatsfordinner.model.Recipe;
 import org.whatsfordinner.whatsfordinner.model.RecipeIngredient;
+import org.whatsfordinner.whatsfordinner.repository.AllergyRepository;
 import org.whatsfordinner.whatsfordinner.repository.IngredientRepository;
 import org.whatsfordinner.whatsfordinner.repository.RecipeRepository;
 
@@ -17,6 +19,7 @@ public class DataSeeder implements CommandLineRunner {
 
     private final IngredientRepository ingredientRepository;
     private final RecipeRepository recipeRepository;
+    private final AllergyRepository allergyRepository;
 
     @Override
     public void run(String... args) {
@@ -65,5 +68,12 @@ public class DataSeeder implements CommandLineRunner {
                 RecipeIngredient.builder().recipe(pastaRecipe).ingredient(cheese).quantity(50.0).isOptional(true).build()
         ));
         recipeRepository.save(pastaRecipe);
+
+
+        if (allergyRepository.count() == 0) {
+            allergyRepository.save(Allergy.builder().name("gluten").build());
+            allergyRepository.save(Allergy.builder().name("lactose").build());
+            allergyRepository.save(Allergy.builder().name("nuts").build());
+        }
     }
 }
