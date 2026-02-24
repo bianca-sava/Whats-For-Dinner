@@ -13,6 +13,7 @@ import org.whatsfordinner.whatsfordinner.repository.UserFridgeRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,10 +34,10 @@ public class FridgeService {
         Ingredient ingredient = ingredientRepository.findById(request.getIngredientId())
                 .orElseThrow(() -> new RuntimeException("Ingredient not found"));
 
+
         UserFridge fridgeItem = UserFridge.builder()
                 .user(user)
                 .ingredient(ingredient)
-                .quantity(request.getQuantity())
                 .build();
 
         UserFridge saved = userFridgeRepository.save(fridgeItem);
@@ -66,10 +67,10 @@ public class FridgeService {
     private FridgeItemResponseDTO mapToDTO(UserFridge fridgeItem) {
         return FridgeItemResponseDTO.builder()
                 .id(fridgeItem.getId())
+                .ingredientId(fridgeItem.getIngredient().getId())
                 .ingredientName(fridgeItem.getIngredient().getName())
                 .category(fridgeItem.getIngredient().getCategory())
-                .unit(fridgeItem.getIngredient().getDefaultUnit())
-                .quantity(fridgeItem.getQuantity())
+                .isPantryItem(fridgeItem.getIngredient().getIsPantryItem())
                 .build();
     }
 }

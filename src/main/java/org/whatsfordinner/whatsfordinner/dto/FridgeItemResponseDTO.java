@@ -12,8 +12,8 @@ import org.whatsfordinner.whatsfordinner.model.Ingredient;
 @Builder
 public class FridgeItemResponseDTO {
     private Long id;
+    private Long ingredientId;
     private String ingredientName;
     private Ingredient.Category category;
-    private Ingredient.Unit unit;
-    private Double quantity;
+    private Boolean isPantryItem;
 }

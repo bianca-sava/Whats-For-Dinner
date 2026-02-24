@@ -2,6 +2,7 @@ package org.whatsfordinner.whatsfordinner.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 @Entity
 @Table(name = "ingredients")
 @Data
@@ -23,11 +24,15 @@ public class Ingredient {
     @Enumerated(EnumType.STRING)
     private Unit defaultUnit;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isPantryItem = false;
+
     public enum Category {
-        DAIRY, MEAT, VEGETABLE, FRUIT, GRAIN, OTHER
+        DAIRY, MEAT, VEGETABLE, FRUIT, GRAIN, OTHER, SPICE
     }
 
     public enum Unit {
-        GRAMS, ML, PIECES
+        GRAMS, ML, PIECES, TEASPOON, TABLESPOON, TASTE
     }
 }

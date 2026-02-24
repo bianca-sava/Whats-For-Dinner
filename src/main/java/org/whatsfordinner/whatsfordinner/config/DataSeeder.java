@@ -23,16 +23,20 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (ingredientRepository.count() > 0) return; // nu seed-uim de doua ori
+        if (ingredientRepository.count() > 0) return;
 
         Ingredient egg = ingredientRepository.save(Ingredient.builder().name("egg").category(Ingredient.Category.OTHER).defaultUnit(Ingredient.Unit.PIECES).build());
         Ingredient milk = ingredientRepository.save(Ingredient.builder().name("milk").category(Ingredient.Category.DAIRY).defaultUnit(Ingredient.Unit.ML).build());
         Ingredient flour = ingredientRepository.save(Ingredient.builder().name("flour").category(Ingredient.Category.GRAIN).defaultUnit(Ingredient.Unit.GRAMS).build());
         Ingredient butter = ingredientRepository.save(Ingredient.builder().name("butter").category(Ingredient.Category.DAIRY).defaultUnit(Ingredient.Unit.GRAMS).build());
-        Ingredient sugar = ingredientRepository.save(Ingredient.builder().name("sugar").category(Ingredient.Category.OTHER).defaultUnit(Ingredient.Unit.GRAMS).build());
         Ingredient pasta = ingredientRepository.save(Ingredient.builder().name("pasta").category(Ingredient.Category.GRAIN).defaultUnit(Ingredient.Unit.GRAMS).build());
         Ingredient tomatoSauce = ingredientRepository.save(Ingredient.builder().name("tomato sauce").category(Ingredient.Category.VEGETABLE).defaultUnit(Ingredient.Unit.ML).build());
         Ingredient cheese = ingredientRepository.save(Ingredient.builder().name("cheese").category(Ingredient.Category.DAIRY).defaultUnit(Ingredient.Unit.GRAMS).build());
+
+        Ingredient pepper = ingredientRepository.save(Ingredient.builder().name("salt").category(Ingredient.Category.SPICE).defaultUnit(Ingredient.Unit.TASTE).isPantryItem(true).build());
+        Ingredient salt = ingredientRepository.save(Ingredient.builder().name("salt").category(Ingredient.Category.SPICE).defaultUnit(Ingredient.Unit.TASTE).isPantryItem(true).build());
+        Ingredient oil = ingredientRepository.save(Ingredient.builder().name("oil").category(Ingredient.Category.OTHER).defaultUnit(Ingredient.Unit.ML).isPantryItem(true).build());
+        Ingredient sugar = ingredientRepository.save(Ingredient.builder().name("sugar").category(Ingredient.Category.OTHER).defaultUnit(Ingredient.Unit.GRAMS).isPantryItem(true).build());
 
         Recipe pancakes = recipeRepository.save(Recipe.builder()
                 .name("Pancakes")

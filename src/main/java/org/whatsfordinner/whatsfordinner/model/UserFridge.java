@@ -24,9 +24,6 @@ public class UserFridge {
     @JoinColumn(name = "ingredient_id", nullable = false)
     private Ingredient ingredient;
 
-    @Column(nullable = false)
-    private Double quantity;
-
     @Column(nullable = false, updatable = false)
     private LocalDateTime addedAt;
 

@@ -68,6 +68,7 @@ public class RecipeService {
         return recipe.getRecipeIngredients()
                 .stream()
                 .filter(ri -> !ri.getIsOptional())
+                .filter(ri -> !ri.getIngredient().getIsPantryItem())
                 .filter(ri -> !fridgeIngredientIds.contains(ri.getIngredient().getId()))
                 .count();
     }
@@ -76,6 +77,7 @@ public class RecipeService {
         List<String> missingIngredients = recipe.getRecipeIngredients()
                 .stream()
                 .filter(ri -> !ri.getIsOptional())
+                .filter(ri -> !ri.getIngredient().getIsPantryItem())
                 .filter(ri -> !fridgeIngredientIds.contains(ri.getIngredient().getId()))
                 .map(ri -> ri.getIngredient().getName())
                 .collect(Collectors.toList());
