@@ -31,9 +31,15 @@ public class FridgeService {
 
     public FridgeItemResponseDTO addToFridge(AddToFridgeRequestDTO request) {
         User user = getCurrentUser();
+
+        Optional<UserFridge> existingItem = userFridgeRepository.findByUserAndIngredientId(user, request.getIngredientId());
+
+        if (existingItem.isPresent()) {
+            return mapToDTO(existingItem.get());
+        }
+
         Ingredient ingredient = ingredientRepository.findById(request.getIngredientId())
                 .orElseThrow(() -> new RuntimeException("Ingredient not found"));
-
 
         UserFridge fridgeItem = UserFridge.builder()
                 .user(user)
