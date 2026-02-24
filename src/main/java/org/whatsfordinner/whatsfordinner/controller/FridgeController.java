@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.whatsfordinner.whatsfordinner.dto.AddToFridgeRequestDTO;
 import org.whatsfordinner.whatsfordinner.dto.FridgeItemResponseDTO;
+import org.whatsfordinner.whatsfordinner.dto.ReceiptScanRequestDTO;
+import org.whatsfordinner.whatsfordinner.dto.ScannedIngredientDTO;
 import org.whatsfordinner.whatsfordinner.service.FridgeService;
 
 import java.util.List;
@@ -16,6 +18,11 @@ import java.util.List;
 public class FridgeController {
 
     private final FridgeService fridgeService;
+
+    @PostMapping("/scan")
+    public ResponseEntity<List<ScannedIngredientDTO>> scanReceipt(@Valid @RequestBody ReceiptScanRequestDTO request) {
+        return ResponseEntity.ok(fridgeService.scanReceipt(request));
+    }
 
     @PostMapping
     public ResponseEntity<FridgeItemResponseDTO> addToFridge(@Valid @RequestBody AddToFridgeRequestDTO request) {
@@ -32,4 +39,5 @@ public class FridgeController {
         fridgeService.removeFromFridge(id);
         return ResponseEntity.noContent().build();
     }
+
 }
