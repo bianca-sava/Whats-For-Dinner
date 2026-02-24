@@ -10,9 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AddToFridgeRequestDTO {
-
+public class AddAllergyRequestDTO {
     @NotNull
-    private Long ingredientId;
-
+    private Long allergyId;
 }

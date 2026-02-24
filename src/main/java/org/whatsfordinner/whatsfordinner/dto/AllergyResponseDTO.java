@@ -1,6 +1,5 @@
 package org.whatsfordinner.whatsfordinner.dto;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,9 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AddToFridgeRequestDTO {
-
-    @NotNull
-    private Long ingredientId;
-
+public class AllergyResponseDTO {
+    private Long id;
+    private String name;
 }
