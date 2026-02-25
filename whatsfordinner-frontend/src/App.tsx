@@ -1,15 +1,13 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
-import LoginPage from "./pages/LoginPage/LoginPage";
-import RegisterPage from "./pages/RegisterPage/RegisterPage";
+import LoginPage from "./pages/LoginPage.tsx";
+import RegisterPage from "./pages/RegisterPage.tsx";
 import Navbar from "./components/Navbar";
+import FridgePage from "./pages/FridgePage";
 
-// Placeholder pages — replace these as we build each one
-const FridgePage = () => <div className="p-8 text-center text-gray-400">Fridge Page — coming soon</div>;
 const RecipesPage = () => <div className="p-8 text-center text-gray-400">Recipes Page — coming soon</div>;
 const ProfilePage = () => <div className="p-8 text-center text-gray-400">Profile Page — coming soon</div>;
 
-// Layout wrapper for authenticated pages (includes navbar)
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen bg-cream-50">
@@ -21,7 +19,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     );
 }
 
-// Route guard
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated } = useAuth();
     return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
