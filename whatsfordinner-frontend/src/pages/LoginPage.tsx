@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.tsx";
-import axios from "axios";
+import apiClient from "../api/client";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -15,7 +15,7 @@ export default function LoginPage() {
         setError("");
         setLoading(true);
         try {
-            const response = await axios.post("http://localhost:8080/api/auth/login", {
+            const response = await apiClient.post("/api/auth/login", {
                 email,
                 password,
             });

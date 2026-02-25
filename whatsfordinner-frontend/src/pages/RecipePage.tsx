@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.tsx";
-import axios from "axios";
+import apiClient from "../api/client";
 
 interface RecipeIngredient {
     ingredientName: string;
@@ -51,7 +50,6 @@ const DIET_LABELS: Record<string, string> = {
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { token } = useAuth();
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
@@ -62,12 +60,10 @@ export default function RecipePage() {
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState("");
 
-    const headers = { Authorization: `Bearer ${token}` };
-
     useEffect(() => {
         const fetch = async () => {
             try {
-                const res = await axios.get(`http://localhost:8080/api/recipes/${id}`, { headers });
+                const res = await apiClient.get(`/api/recipes/${id}`);
                 setRecipe(res.data);
             } catch {
                 setError("Could not load this recipe. Please try again.");
@@ -105,11 +101,9 @@ export default function RecipePage() {
         setSaving(true);
         setSaveError("");
         try {
-
-            await axios.post(
-                `http://localhost:8080/api/recipes/${recipe.id}/cooked`,
-                Array.from(consumedIds),
-                { headers }
+            await apiClient.post(
+                `/api/recipes/${recipe.id}/cooked`,
+                Array.from(consumedIds)
             );
             setShowModal(false);
             navigate("/recipes");

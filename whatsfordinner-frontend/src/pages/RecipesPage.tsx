@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.tsx";
-import axios from "axios";
+import apiClient from "../api/client";
 
 interface RecipeIngredient {
     ingredientName: string;
@@ -43,7 +43,7 @@ const DIET_LABELS: Record<string, string> = {
 
 
 export default function RecipesPage() {
-    const { token } = useAuth();
+    const { } = useAuth();
     const navigate = useNavigate();
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(false);
@@ -56,12 +56,10 @@ export default function RecipesPage() {
     const [dietType, setDietType] = useState<string | null>(null);
     const [maxMissing, setMaxMissing] = useState<number>(0);
 
-    const headers = { Authorization: `Bearer ${token}` };
-
     useEffect(() => {
         const fetchPrefs = async () => {
             try {
-                const res = await axios.get("http://localhost:8080/api/profile/preferences", { headers });
+                const res = await apiClient.get("/api/profile/preferences");
                 const { isVegan, isVegetarian } = res.data;
                 if (isVegan) setDietType("VEGAN");
                 else if (isVegetarian) setDietType("VEGETARIAN");
@@ -79,14 +77,13 @@ export default function RecipesPage() {
         setSearched(true);
         setSearchError("");
         try {
-            const res = await axios.post(
-                "http://localhost:8080/api/recipes/search",
+            const res = await apiClient.post(
+                "/api/recipes/search",
                 {
                     mealType: mealType ?? undefined,
                     dietType: dietType ?? "NORMAL",
                     maxMissingIngredients: maxMissing,
-                },
-                { headers }
+                }
             );
             setRecipes(res.data);
         } catch {

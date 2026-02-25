@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import axios from "axios";
+import apiClient from "../api/client";
 
 interface AuthContextType {
     token: string | null;
@@ -28,10 +28,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         if (!token) return;
-        axios
-            .get("http://localhost:8080/api/profile/me", {
-                headers: { Authorization: `Bearer ${token}` },
-            })
+        apiClient
+            .get("/api/profile/me")
             .then(res => {
                 const name = res.data.firstName ?? null;
                 setUserName(name);
@@ -59,10 +57,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const refreshUserName = () => {
         if (!token) return;
-        axios
-            .get("http://localhost:8080/api/profile/me", {
-                headers: { Authorization: `Bearer ${token}` },
-            })
+        apiClient
+            .get("/api/profile/me")
             .then(res => {
                 const name = res.data.firstName ?? null;
                 setUserName(name);

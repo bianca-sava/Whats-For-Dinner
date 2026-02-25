@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import apiClient from "../api/client";
 import { useAuth } from "../context/AuthContext.tsx";
 
 interface OnboardingData {
@@ -17,27 +17,18 @@ interface Allergy {
     name: string;
 }
 
-const ALL_ALLERGIES: Allergy[] = [
-    { id: 1, name: "gluten" },
-    { id: 2, name: "lactose" },
-    { id: 3, name: "eggs" },
-    { id: 4, name: "nuts" },
-    { id: 5, name: "peanuts" },
-    { id: 6, name: "fish" },
-    { id: 7, name: "shellfish" },
-    { id: 8, name: "soy" },
-];
-
 const STEPS = ["Name", "Diet", "Allergies", "Household"];
 const TOTAL_STEPS = STEPS.length;
-
 const SERVING_OPTIONS = [1, 2, 3, 4, 5, 6];
 
 export default function OnboardingPage() {
     const navigate = useNavigate();
-    const { token, completeOnboarding, refreshUserName } = useAuth();
+    const { completeOnboarding, refreshUserName } = useAuth();
 
+    // --- State ---
+    const [allergies, setAllergies] = useState<Allergy[]>([]);
     const [step, setStep] = useState(0);
+    const [submitting, setSubmitting] = useState(false);
     const [data, setData] = useState<OnboardingData>({
         firstName: "",
         lastName: "",
@@ -46,23 +37,34 @@ export default function OnboardingPage() {
         defaultServings: 2,
         allergyIds: new Set(),
     });
-    const [submitting, setSubmitting] = useState(false);
 
-    const goNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS - 1));
-    const goBack = () => setStep(s => Math.max(s - 1, 0));
+    // --- Effects ---
+    useEffect(() => {
+        apiClient
+            .get("/api/allergies")
+            .then((res) => setAllergies(res.data))
+            .catch((err) => console.error("Failed to fetch allergies", err));
+    }, []);
+
+    // --- Handlers ---
+    const goNext = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
+    const goBack = () => setStep((s) => Math.max(s - 1, 0));
 
     const toggleAllergy = (id: number) => {
-        setData(prev => {
+        setData((prev) => {
             const next = new Set(prev.allergyIds);
-            next.has(id) ? next.delete(id) : next.add(id);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
             return { ...prev, allergyIds: next };
         });
     };
 
     const toggleDiet = (key: "isVegetarian" | "isVegan") => {
-        setData(prev => {
+        setData((prev) => {
             const updated = { ...prev, [key]: !prev[key] };
+            // Logic: If you're Vegan, you are automatically Vegetarian.
             if (key === "isVegan" && updated.isVegan) updated.isVegetarian = true;
+            // Logic: If you stop being Vegetarian, you can't be Vegan.
             if (key === "isVegetarian" && !updated.isVegetarian) updated.isVegan = false;
             return updated;
         });
@@ -70,21 +72,25 @@ export default function OnboardingPage() {
 
     const handleFinish = async () => {
         setSubmitting(true);
-        await axios.post(
-            "http://localhost:8080/api/auth/onboarding",
-            {
-                firstName: data.firstName,
-                lastName: data.lastName || null,
+        try {
+            await apiClient.post("/api/auth/onboarding", {
+                firstName: data.firstName.trim(),
+                lastName: data.lastName.trim() || null,
                 isVegetarian: data.isVegetarian,
                 isVegan: data.isVegan,
                 defaultServings: data.defaultServings,
                 allergyIds: Array.from(data.allergyIds),
-            },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        completeOnboarding();
-        refreshUserName();
-        navigate("/fridge");
+            });
+
+            await completeOnboarding();
+            await refreshUserName();
+            navigate("/fridge");
+        } catch (error) {
+            console.error("Onboarding failed", error);
+            alert("Something went wrong. Please try again.");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const canProceed = () => {
@@ -95,7 +101,6 @@ export default function OnboardingPage() {
     return (
         <div className="min-h-screen bg-cream-50 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
-
                 {/* Header */}
                 <div className="text-center mb-8">
                     <span className="text-4xl">🍽️</span>
@@ -121,7 +126,6 @@ export default function OnboardingPage() {
 
                 {/* Card */}
                 <div className="bg-white rounded-3xl shadow-sm p-6 mb-4">
-
                     {/* Step 0 — Name */}
                     {step === 0 && (
                         <div>
@@ -136,7 +140,7 @@ export default function OnboardingPage() {
                                     <input
                                         type="text"
                                         value={data.firstName}
-                                        onChange={e => setData(d => ({ ...d, firstName: e.target.value }))}
+                                        onChange={(e) => setData((d) => ({ ...d, firstName: e.target.value }))}
                                         autoFocus
                                         placeholder="e.g. Olivia"
                                         className="w-full h-11 bg-cream-50 border border-cream-200 rounded-xl px-4 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
@@ -149,7 +153,7 @@ export default function OnboardingPage() {
                                     <input
                                         type="text"
                                         value={data.lastName}
-                                        onChange={e => setData(d => ({ ...d, lastName: e.target.value }))}
+                                        onChange={(e) => setData((d) => ({ ...d, lastName: e.target.value }))}
                                         placeholder="e.g. Smith"
                                         className="w-full h-11 bg-cream-50 border border-cream-200 rounded-xl px-4 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
                                     />
@@ -161,12 +165,8 @@ export default function OnboardingPage() {
                     {/* Step 1 — Diet */}
                     {step === 1 && (
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                Any dietary preferences?
-                            </h2>
-                            <p className="text-sm text-gray-400 mb-5">
-                                We'll use this to filter recipe suggestions for you.
-                            </p>
+                            <h2 className="text-lg font-semibold text-gray-800 mb-1">Any dietary preferences?</h2>
+                            <p className="text-sm text-gray-400 mb-5">We'll use this to filter recipe suggestions.</p>
 
                             <div className="space-y-3">
                                 {[
@@ -177,9 +177,7 @@ export default function OnboardingPage() {
                                         key={key}
                                         onClick={() => toggleDiet(key)}
                                         className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left ${
-                                            data[key]
-                                                ? "border-primary-400 bg-primary-50"
-                                                : "border-gray-100 bg-gray-50 hover:border-gray-200"
+                                            data[key] ? "border-primary-400 bg-primary-50" : "border-gray-100 bg-gray-50 hover:border-gray-200"
                                         }`}
                                     >
                                         <div className="flex items-center gap-3">
@@ -191,9 +189,11 @@ export default function OnboardingPage() {
                                                 <p className="text-xs text-gray-400">{description}</p>
                                             </div>
                                         </div>
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                                            data[key] ? "bg-primary-500 border-primary-500" : "border-gray-300"
-                                        }`}>
+                                        <div
+                                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                                data[key] ? "bg-primary-500 border-primary-500" : "border-gray-300"
+                                            }`}
+                                        >
                                             {data[key] && (
                                                 <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -202,12 +202,6 @@ export default function OnboardingPage() {
                                         </div>
                                     </button>
                                 ))}
-
-                                {!data.isVegetarian && !data.isVegan && (
-                                    <p className="text-xs text-gray-400 text-center pt-1">
-                                        No preference selected — we'll show all recipes.
-                                    </p>
-                                )}
                             </div>
                         </div>
                     )}
@@ -216,26 +210,22 @@ export default function OnboardingPage() {
                     {step === 2 && (
                         <div>
                             <h2 className="text-lg font-semibold text-gray-800 mb-1">Any food allergies?</h2>
-                            <p className="text-sm text-gray-400 mb-5">
-                                We'll warn you when a recipe contains these. Select all that apply.
-                            </p>
+                            <p className="text-sm text-gray-400 mb-5">We'll warn you if a recipe contains these.</p>
 
-                            <div className="grid grid-cols-2 gap-2">
-                                {ALL_ALLERGIES.map(allergy => {
+                            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+                                {allergies.map((allergy) => {
                                     const active = data.allergyIds.has(allergy.id);
                                     return (
                                         <button
                                             key={allergy.id}
                                             onClick={() => toggleAllergy(allergy.id)}
                                             className={`flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all text-left ${
-                                                active
-                                                    ? "border-red-300 bg-red-50"
-                                                    : "border-gray-100 bg-gray-50 hover:border-gray-200"
+                                                active ? "border-red-300 bg-red-50" : "border-gray-100 bg-gray-50 hover:border-gray-200"
                                             }`}
                                         >
-                                            <span className={`text-sm font-medium capitalize ${active ? "text-red-700" : "text-gray-600"}`}>
-                                                {allergy.name}
-                                            </span>
+                      <span className={`text-sm font-medium capitalize ${active ? "text-red-700" : "text-gray-600"}`}>
+                        {allergy.name}
+                      </span>
                                             {active && (
                                                 <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -245,75 +235,50 @@ export default function OnboardingPage() {
                                     );
                                 })}
                             </div>
-
-                            {data.allergyIds.size === 0 && (
-                                <p className="text-xs text-gray-400 text-center mt-4">
-                                    No allergies selected — you can always update this in your profile.
-                                </p>
-                            )}
                         </div>
                     )}
 
                     {/* Step 3 — Household */}
                     {step === 3 && (
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                                How many people are you cooking for?
-                            </h2>
-                            <p className="text-sm text-gray-400 mb-5">
-                                We'll use this as the default serving size for recipes.
-                            </p>
+                            <h2 className="text-lg font-semibold text-gray-800 mb-1">How many people?</h2>
+                            <p className="text-sm text-gray-400 mb-5">Default serving size for your recipes.</p>
 
                             <div className="grid grid-cols-3 gap-3 mb-6">
-                                {SERVING_OPTIONS.map(n => (
+                                {SERVING_OPTIONS.map((n) => (
                                     <button
                                         key={n}
-                                        onClick={() => setData(d => ({ ...d, defaultServings: n }))}
+                                        onClick={() => setData((d) => ({ ...d, defaultServings: n }))}
                                         className={`flex flex-col items-center justify-center py-4 rounded-2xl border-2 transition-all ${
-                                            data.defaultServings === n
-                                                ? "border-primary-400 bg-primary-50"
-                                                : "border-gray-100 bg-gray-50 hover:border-gray-200"
+                                            data.defaultServings === n ? "border-primary-400 bg-primary-50" : "border-gray-100 bg-gray-50 hover:border-gray-200"
                                         }`}
                                     >
-                                        <span className={`text-3xl font-bold ${data.defaultServings === n ? "text-primary-600" : "text-gray-700"}`}>
-                                            {n}
-                                        </span>
-                                        <span className="text-xs text-gray-400">
-                                            {n === 1 ? "person" : "people"}
-                                        </span>
+                    <span className={`text-3xl font-bold ${data.defaultServings === n ? "text-primary-600" : "text-gray-700"}`}>
+                      {n}
+                    </span>
+                                        <span className="text-xs text-gray-400">{n === 1 ? "person" : "people"}</span>
                                     </button>
                                 ))}
                             </div>
 
                             {/* Summary */}
                             <div className="bg-cream-50 rounded-2xl p-4 space-y-2">
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Your profile summary</p>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Name</span>
-                                    <span className="font-medium text-gray-800">
-                                        {data.firstName}{data.lastName ? ` ${data.lastName}` : ""}
-                                    </span>
-                                </div>
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-gray-500">Diet</span>
                                     <span className="font-medium text-gray-800">
-                                        {data.isVegan ? "Vegan" : data.isVegetarian ? "Vegetarian" : "No preference"}
-                                    </span>
+                    {data.isVegan ? "Vegan" : data.isVegetarian ? "Vegetarian" : "None"}
+                  </span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-gray-500">Allergies</span>
-                                    <span className="font-medium text-gray-800">
-                                        {data.allergyIds.size === 0
-                                            ? "None"
-                                            : ALL_ALLERGIES
-                                                .filter(a => data.allergyIds.has(a.id))
-                                                .map(a => a.name)
-                                                .join(", ")}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Cooking for</span>
-                                    <span className="font-medium text-gray-800">{data.defaultServings} {data.defaultServings === 1 ? "person" : "people"}</span>
+                                    <span className="font-medium text-gray-800 text-right">
+                    {data.allergyIds.size === 0
+                        ? "None"
+                        : allergies
+                            .filter((a) => data.allergyIds.has(a.id))
+                            .map((a) => a.name)
+                            .join(", ")}
+                  </span>
                                 </div>
                             </div>
                         </div>
@@ -356,7 +321,7 @@ export default function OnboardingPage() {
                         onClick={() => navigate("/fridge")}
                         className="w-full text-center text-xs text-gray-400 hover:text-gray-500 mt-4 transition-colors"
                     >
-                        Skip for now — I'll set this up later
+                        Skip for now
                     </button>
                 )}
             </div>
