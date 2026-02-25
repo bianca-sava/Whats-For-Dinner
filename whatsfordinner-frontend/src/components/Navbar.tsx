@@ -8,7 +8,7 @@ const navItems = [
 ];
 
 export default function Navbar() {
-    const { logout } = useAuth();
+    const { logout, userName } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -16,6 +16,10 @@ export default function Navbar() {
         logout();
         navigate("/login");
     };
+
+    const greeting = userName
+        ? `What's for Dinner, ${userName}?`
+        : "What's for Dinner";
 
     return (
         <nav className="bg-white border-b border-cream-100 sticky top-0 z-50">
@@ -25,7 +29,7 @@ export default function Navbar() {
                 <Link to="/fridge" className="flex items-center gap-2.5 group">
                     <span className="text-2xl">🍽️</span>
                     <span className="font-serif font-bold text-gray-800 text-lg leading-none">
-                        What's For Dinner
+                        {greeting}
                     </span>
                 </Link>
 
@@ -49,10 +53,8 @@ export default function Navbar() {
                         );
                     })}
 
-                    {/* Divider */}
                     <div className="w-px h-5 bg-gray-200 mx-2" />
 
-                    {/* Logout */}
                     <button
                         onClick={handleLogout}
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all"

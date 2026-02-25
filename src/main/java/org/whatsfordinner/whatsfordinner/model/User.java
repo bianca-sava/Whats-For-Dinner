@@ -27,6 +27,18 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    private String firstName;
+
+    private String lastName;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer defaultServings = 2;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean hasCompletedOnboarding = false;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private UserPreferences preferences;
 

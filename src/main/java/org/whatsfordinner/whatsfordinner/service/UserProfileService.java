@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.whatsfordinner.whatsfordinner.dto.AddAllergyRequestDTO;
+import org.whatsfordinner.whatsfordinner.dto.UserResponseDTO;
 import org.whatsfordinner.whatsfordinner.dto.AllergyResponseDTO;
 import org.whatsfordinner.whatsfordinner.dto.UserPreferencesDTO;
 import org.whatsfordinner.whatsfordinner.model.Allergy;
@@ -31,6 +32,16 @@ public class UserProfileService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public UserResponseDTO getMe() {
+        User user = getCurrentUser();
+        return UserResponseDTO.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .hasCompletedOnboarding(user.getHasCompletedOnboarding())
+                .firstName(user.getFirstName())
+                .build();
     }
 
     public UserPreferencesDTO getPreferences() {
