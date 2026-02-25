@@ -39,7 +39,7 @@ public class UserProfileService {
         return UserResponseDTO.builder()
                 .id(user.getId())
                 .email(user.getEmail())
-                .hasCompletedOnboarding(user.getHasCompletedOnboarding())
+                .hasCompletedOnboarding(Boolean.TRUE.equals(user.getHasCompletedOnboarding()))
                 .firstName(user.getFirstName())
                 .build();
     }

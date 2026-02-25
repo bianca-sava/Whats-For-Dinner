@@ -63,7 +63,7 @@ public class AuthService {
         String token = jwtService.generateToken(user.getEmail());
         return Map.of(
                 "token", token,
-                "hasCompletedOnboarding", user.getHasCompletedOnboarding()
+                "hasCompletedOnboarding", Boolean.TRUE.equals(user.getHasCompletedOnboarding())
         );
     }
 
