@@ -10,6 +10,7 @@ import org.whatsfordinner.whatsfordinner.model.Recipe;
 import org.whatsfordinner.whatsfordinner.model.User;
 import org.whatsfordinner.whatsfordinner.model.UserPreferences;
 import org.whatsfordinner.whatsfordinner.repository.RecipeRepository;
+import org.whatsfordinner.whatsfordinner.repository.UserAllergyRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserFridgeRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserPreferencesRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserRepository;
@@ -26,6 +27,7 @@ public class RecipeService {
     private final UserFridgeRepository userFridgeRepository;
     private final UserRepository userRepository;
     private final UserPreferencesRepository userPreferencesRepository;
+    private final UserAllergyRepository userAllergyRepository;
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -38,7 +40,12 @@ public class RecipeService {
 
         Set<Long> fridgeIngredientIds = userFridgeRepository.findByUser(user)
                 .stream()
-                .map(UserFridge -> UserFridge.getIngredient().getId())
+                .map(userFridge -> userFridge.getIngredient().getId())
+                .collect(Collectors.toSet());
+
+        Set<Long> userAllergyIds = userAllergyRepository.findByUser(user)
+                .stream()
+                .map(ua -> ua.getAllergy().getId())
                 .collect(Collectors.toSet());
 
         int maxMissing = request.getMaxMissingIngredients() != null
@@ -65,7 +72,7 @@ public class RecipeService {
                 .filter(recipe -> matchesMealType(recipe, request.getMealType()))
                 .filter(recipe -> matchesDietType(recipe, finalDietType))
                 .filter(recipe -> countMissingIngredients(recipe, fridgeIngredientIds) <= maxMissing)
-                .map(recipe -> mapToDTO(recipe, fridgeIngredientIds))
+                .map(recipe -> mapToDTO(recipe, fridgeIngredientIds, userAllergyIds))
                 .collect(Collectors.toList());
     }
 
@@ -93,7 +100,7 @@ public class RecipeService {
                 .count();
     }
 
-    private RecipeResponseDTO mapToDTO(Recipe recipe, Set<Long> fridgeIngredientIds) {
+    private RecipeResponseDTO mapToDTO(Recipe recipe, Set<Long> fridgeIngredientIds, Set<Long> userAllergyIds) {
         List<String> missingIngredients = recipe.getRecipeIngredients()
                 .stream()
                 .filter(ri -> !ri.getIsOptional())
@@ -102,11 +109,22 @@ public class RecipeService {
                 .map(ri -> ri.getIngredient().getName())
                 .collect(Collectors.toList());
 
+        List<String> allergenWarnings = userAllergyIds.isEmpty()
+                ? List.of()
+                : recipe.getRecipeIngredients()
+                .stream()
+                .map(ri -> ri.getIngredient().getAllergen())
+                .filter(allergen -> allergen != null && userAllergyIds.contains(allergen.getId()))
+                .map(allergen -> allergen.getName())
+                .distinct()
+                .collect(Collectors.toList());
+
         List<RecipeIngredientDTO> ingredients = recipe.getRecipeIngredients()
                 .stream()
                 .map(ri -> RecipeIngredientDTO.builder()
                         .ingredientName(ri.getIngredient().getName())
                         .quantity(ri.getQuantity())
+                        .unit(ri.getIngredient().getDefaultUnit())
                         .isOptional(ri.getIsOptional())
                         .build())
                 .collect(Collectors.toList());
@@ -122,6 +140,7 @@ public class RecipeService {
                 .dietType(recipe.getDietType())
                 .ingredients(ingredients)
                 .missingIngredients(missingIngredients)
+                .allergenWarnings(allergenWarnings)
                 .build();
     }
 }

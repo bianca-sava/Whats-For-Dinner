@@ -23,4 +23,5 @@ public class RecipeResponseDTO {
     private Recipe.DietType dietType;
     private List<RecipeIngredientDTO> ingredients;
     private List<String> missingIngredients;
+    private List<String> allergenWarnings;
 }
