@@ -74,11 +74,14 @@ public class DataSeeder implements CommandLineRunner {
             recipeRepository.save(pastaRecipe);
         }
 
-        if (allergyRepository.count() == 0) {
-            allergyRepository.save(Allergy.builder().name("gluten").build());
-            allergyRepository.save(Allergy.builder().name("lactose").build());
-            allergyRepository.save(Allergy.builder().name("nuts").build());
-        }
+        seedAllergy("gluten");
+        seedAllergy("lactose");
+        seedAllergy("nuts");
+        seedAllergy("peanuts");
+        seedAllergy("eggs");
+        seedAllergy("fish");
+        seedAllergy("shellfish");
+        seedAllergy("soy");
     }
 
     private Ingredient seedIngredient(String name, Ingredient.Category category, Ingredient.Unit unit, boolean isPantry) {
@@ -90,6 +93,13 @@ public class DataSeeder implements CommandLineRunner {
                                 .defaultUnit(unit)
                                 .isPantryItem(isPantry)
                                 .build()
+                ));
+    }
+
+    private void seedAllergy(String name) {
+        allergyRepository.findByName(name)
+                .orElseGet(() -> allergyRepository.save(
+                        Allergy.builder().name(name).build()
                 ));
     }
 }
