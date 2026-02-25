@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.tsx";
 import axios from "axios";
 
@@ -43,12 +43,30 @@ export default function RecipesPage() {
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
     const [expandedId, setExpandedId] = useState<number | null>(null);
+    const [prefsLoading, setPrefsLoading] = useState(true);
 
     const [mealType, setMealType] = useState<string | null>(null);
     const [dietType, setDietType] = useState<string | null>(null);
     const [maxMissing, setMaxMissing] = useState<number>(0);
 
     const headers = { Authorization: `Bearer ${token}` };
+
+    // Load user preferences and pre-populate diet filter
+    useEffect(() => {
+        const fetchPrefs = async () => {
+            try {
+                const res = await axios.get("http://localhost:8080/api/profile/preferences", { headers });
+                const { isVegan, isVegetarian } = res.data;
+                if (isVegan) setDietType("VEGAN");
+                else if (isVegetarian) setDietType("VEGETARIAN");
+            } catch {
+                // silent
+            } finally {
+                setPrefsLoading(false);
+            }
+        };
+        fetchPrefs();
+    }, []);
 
     const search = async () => {
         setLoading(true);
@@ -59,7 +77,7 @@ export default function RecipesPage() {
                 "http://localhost:8080/api/recipes/search",
                 {
                     mealType: mealType ?? undefined,
-                    dietType: dietType ?? undefined,
+                    dietType: dietType ?? "NORMAL",
                     maxMissingIngredients: maxMissing,
                 },
                 { headers }
@@ -70,6 +88,10 @@ export default function RecipesPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const toggleDietType = (type: string) => {
+        setDietType(prev => prev === type ? null : type);
     };
 
     const toggleExpand = (id: number) => {
@@ -114,12 +136,16 @@ export default function RecipesPage() {
                     <div>
                         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-2">
                             Diet
+                            {dietType && (
+                                <span className="ml-2 text-primary-400 normal-case font-normal">from your profile</span>
+                            )}
                         </label>
                         <div className="flex flex-wrap gap-2">
                             {DIET_TYPES.map(type => (
                                 <button
                                     key={type}
-                                    onClick={() => setDietType(prev => prev === type ? null : type)}
+                                    onClick={() => toggleDietType(type)}
+                                    disabled={prefsLoading}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                         dietType === type
                                             ? "bg-primary-500 text-white"
@@ -154,7 +180,7 @@ export default function RecipesPage() {
 
                 <button
                     onClick={search}
-                    disabled={loading}
+                    disabled={loading || prefsLoading}
                     className="w-full h-11 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-60"
                 >
                     {loading ? "Searching..." : "Find Recipes"}
@@ -206,8 +232,6 @@ export default function RecipesPage() {
 
                         return (
                             <div key={recipe.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-
-                                {/* Card header */}
                                 <button
                                     onClick={() => toggleExpand(recipe.id)}
                                     className="w-full px-5 py-4 flex items-center justify-between text-left"
@@ -243,15 +267,12 @@ export default function RecipesPage() {
                                     </svg>
                                 </button>
 
-                                {/* Expanded content */}
                                 {isExpanded && (
                                     <div className="px-5 pb-5 border-t border-gray-50">
-
                                         {recipe.description && (
                                             <p className="text-sm text-gray-500 mt-4 mb-4">{recipe.description}</p>
                                         )}
 
-                                        {/* Missing ingredients warning */}
                                         {recipe.missingIngredients.length > 0 && (
                                             <div className="bg-amber-50 rounded-xl p-3 mb-4">
                                                 <p className="text-xs font-semibold text-amber-700 mb-1">You're missing:</p>
@@ -259,7 +280,6 @@ export default function RecipesPage() {
                                             </div>
                                         )}
 
-                                        {/* Ingredients */}
                                         <div className="mb-4">
                                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Ingredients</p>
                                             <div className="space-y-1.5">
@@ -275,7 +295,6 @@ export default function RecipesPage() {
                                             </div>
                                         </div>
 
-                                        {/* Instructions */}
                                         <div>
                                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Instructions</p>
                                             <p className="text-sm text-gray-600 leading-relaxed">{recipe.instructions}</p>

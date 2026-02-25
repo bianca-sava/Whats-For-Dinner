@@ -8,7 +8,6 @@ import org.whatsfordinner.whatsfordinner.dto.RecipeResponseDTO;
 import org.whatsfordinner.whatsfordinner.dto.RecipeSearchRequestDTO;
 import org.whatsfordinner.whatsfordinner.model.Recipe;
 import org.whatsfordinner.whatsfordinner.model.User;
-import org.whatsfordinner.whatsfordinner.model.UserFridge;
 import org.whatsfordinner.whatsfordinner.model.UserPreferences;
 import org.whatsfordinner.whatsfordinner.repository.RecipeRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserFridgeRepository;
@@ -58,7 +57,8 @@ public class RecipeService {
             }
         }
 
-        final Recipe.DietType finalDietType = effectiveDietType;
+        final Recipe.DietType finalDietType =
+                effectiveDietType == Recipe.DietType.NORMAL ? null : effectiveDietType;
 
         return recipeRepository.findAll()
                 .stream()
