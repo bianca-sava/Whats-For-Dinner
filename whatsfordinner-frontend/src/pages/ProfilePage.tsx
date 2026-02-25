@@ -13,18 +13,13 @@ interface Allergy {
     name: string;
 }
 
-const ALL_ALLERGIES: Allergy[] = [
-    { id: 1, name: "gluten" },
-    { id: 2, name: "lactose" },
-    { id: 3, name: "nuts" },
-];
-
 export default function ProfilePage() {
     const { token, logout } = useAuth();
     const navigate = useNavigate();
 
     const [preferences, setPreferences] = useState<Preferences>({ isVegetarian: false, isVegan: false });
     const [userAllergies, setUserAllergies] = useState<Allergy[]>([]);
+    const [allAllergies, setAllAllergies] = useState<Allergy[]>([]);
     const [loading, setLoading] = useState(true);
     const [savingPrefs, setSavingPrefs] = useState(false);
     const [savedPrefs, setSavedPrefs] = useState(false);
@@ -35,12 +30,14 @@ export default function ProfilePage() {
     useEffect(() => {
         const init = async () => {
             try {
-                const [prefsRes, userAllergyRes] = await Promise.all([
+                const [prefsRes, userAllergyRes, allAllergyRes] = await Promise.all([
                     axios.get("http://localhost:8080/api/profile/preferences", { headers }),
                     axios.get("http://localhost:8080/api/profile/allergies", { headers }),
+                    axios.get("http://localhost:8080/api/allergies", { headers }),
                 ]);
                 setPreferences(prefsRes.data);
                 setUserAllergies(userAllergyRes.data);
+                setAllAllergies(allAllergyRes.data);
             } catch {
                 // silent
             } finally {
@@ -159,7 +156,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="divide-y divide-gray-50">
-                    {ALL_ALLERGIES.map(allergy => {
+                    {allAllergies.map(allergy => {
                         const active = hasAllergy(allergy.id);
                         const toggling = togglingAllergyId === allergy.id;
                         return (

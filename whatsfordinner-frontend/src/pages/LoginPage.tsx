@@ -19,9 +19,10 @@ export default function LoginPage() {
                 email,
                 password,
             });
-            login(response.data.token);
-            navigate("/fridge");
-        } catch (err) {
+            const completedOnboarding = response.data.hasCompletedOnboarding ?? true;
+            login(response.data.token, completedOnboarding);
+            navigate(completedOnboarding ? "/fridge" : "/onboarding");
+        } catch {
             setError("Invalid email or password");
         } finally {
             setLoading(false);
@@ -72,6 +73,7 @@ export default function LoginPage() {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                             className="w-full h-11 bg-cream-50 border border-cream-200 rounded-xl px-4 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                             placeholder="••••••••"
                         />

@@ -28,6 +28,10 @@ public class Ingredient {
     @Builder.Default
     private Boolean isPantryItem = false;
 
+    @ManyToOne
+    @JoinColumn(name = "allergy_id")
+    private Allergy allergen;
+
     public enum Category {
         DAIRY, MEAT, VEGETABLE, FRUIT, GRAIN, OTHER, SPICE
     }

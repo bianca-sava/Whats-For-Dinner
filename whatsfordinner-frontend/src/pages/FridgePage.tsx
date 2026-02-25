@@ -40,14 +40,17 @@ export default function FridgePage() {
     const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
     const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
     const [view, setView] = useState<View>("fridge");
     const [scannedItems, setScannedItems] = useState<ScannedIngredient[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [addingBulk, setAddingBulk] = useState(false);
     const [scanError, setScanError] = useState("");
+    const [removeError, setRemoveError] = useState("");
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [search, setSearch] = useState("");
     const [addingId, setAddingId] = useState<number | null>(null);
+    const [addError, setAddError] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
 
@@ -57,8 +60,9 @@ export default function FridgePage() {
         try {
             const res = await axios.get("http://localhost:8080/api/fridge", { headers });
             setFridgeItems(res.data);
+            setLoadError("");
         } catch {
-            // silent
+            setLoadError("Failed to load your fridge. Please refresh the page.");
         } finally {
             setLoading(false);
         }
@@ -69,7 +73,6 @@ export default function FridgePage() {
             const res = await axios.get("http://localhost:8080/api/ingredients", { headers });
             setAllIngredients(res.data);
         } catch {
-            // silent
         }
     };
 
@@ -83,6 +86,7 @@ export default function FridgePage() {
             setTimeout(() => searchRef.current?.focus(), 100);
         } else {
             setSearch("");
+            setAddError("");
         }
     }, [drawerOpen]);
 
@@ -95,21 +99,24 @@ export default function FridgePage() {
 
     const addIngredient = async (ingredientId: number) => {
         setAddingId(ingredientId);
+        setAddError("");
         try {
             await axios.post("http://localhost:8080/api/fridge", { ingredientId }, { headers });
             await fetchFridge();
         } catch {
-            // silent
+            setAddError("Failed to add ingredient. Please try again.");
         } finally {
             setAddingId(null);
         }
     };
 
     const removeItem = async (id: number) => {
+        setRemoveError("");
         try {
             await axios.delete(`http://localhost:8080/api/fridge/${id}`, { headers });
             setFridgeItems(prev => prev.filter(i => i.id !== id));
         } catch {
+            setRemoveError("Failed to remove item. Please try again.");
         }
     };
 
@@ -152,6 +159,7 @@ export default function FridgePage() {
             return;
         }
         setAddingBulk(true);
+        setScanError("");
         try {
             await axios.post("http://localhost:8080/api/fridge/bulk", Array.from(selectedIds), { headers });
             await fetchFridge();
@@ -202,7 +210,12 @@ export default function FridgePage() {
                 </div>
 
                 {scanError && (
-                    <div className="bg-red-50 text-red-600 text-sm rounded-xl p-3 mb-4">{scanError}</div>
+                    <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-3 mb-4 flex items-center gap-2">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {scanError}
+                    </div>
                 )}
 
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
@@ -291,6 +304,31 @@ export default function FridgePage() {
                 </div>
             </div>
 
+            {/* Load error */}
+            {loadError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-4 mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {loadError}
+                    </div>
+                    <button
+                        onClick={() => { setLoading(true); fetchFridge(); }}
+                        className="text-red-500 font-medium text-xs underline ml-4 flex-shrink-0"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
+
+            {/* Remove error */}
+            {removeError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-3 mb-4">
+                    {removeError}
+                </div>
+            )}
+
             {/* Loading */}
             {loading && (
                 <div className="flex items-center justify-center py-20">
@@ -299,7 +337,7 @@ export default function FridgePage() {
             )}
 
             {/* Empty state */}
-            {!loading && fridgeItems.length === 0 && (
+            {!loading && !loadError && fridgeItems.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
                         <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -377,6 +415,12 @@ export default function FridgePage() {
                         className="w-full h-10 bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
                     />
                 </div>
+
+                {addError && (
+                    <div className="mx-5 mt-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl p-3">
+                        {addError}
+                    </div>
+                )}
 
                 <div className="flex-1 overflow-y-auto">
                     {filteredIngredients.length === 0 ? (

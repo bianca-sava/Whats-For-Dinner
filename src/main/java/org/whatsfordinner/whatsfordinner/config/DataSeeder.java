@@ -24,18 +24,27 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        Ingredient egg = seedIngredient("egg", Ingredient.Category.OTHER, Ingredient.Unit.PIECES, false);
-        Ingredient milk = seedIngredient("milk", Ingredient.Category.DAIRY, Ingredient.Unit.ML, false);
-        Ingredient flour = seedIngredient("flour", Ingredient.Category.GRAIN, Ingredient.Unit.GRAMS, false);
-        Ingredient butter = seedIngredient("butter", Ingredient.Category.DAIRY, Ingredient.Unit.GRAMS, false);
-        Ingredient pasta = seedIngredient("pasta", Ingredient.Category.GRAIN, Ingredient.Unit.GRAMS, false);
-        Ingredient tomatoSauce = seedIngredient("tomato sauce", Ingredient.Category.VEGETABLE, Ingredient.Unit.ML, false);
-        Ingredient cheese = seedIngredient("cheese", Ingredient.Category.DAIRY, Ingredient.Unit.GRAMS, false);
+        Allergy lactose   = seedAllergy("lactose");
+        Allergy eggs      = seedAllergy("eggs");
+        Allergy gluten    = seedAllergy("gluten");
+        Allergy nuts      = seedAllergy("nuts");
+        Allergy peanuts   = seedAllergy("peanuts");
+        Allergy fish      = seedAllergy("fish");
+        Allergy shellfish = seedAllergy("shellfish");
+        Allergy soy       = seedAllergy("soy");
 
-        Ingredient pepper = seedIngredient("pepper", Ingredient.Category.SPICE, Ingredient.Unit.TASTE, true);
-        Ingredient salt = seedIngredient("salt", Ingredient.Category.SPICE, Ingredient.Unit.TASTE, true);
-        Ingredient oil = seedIngredient("oil", Ingredient.Category.OTHER, Ingredient.Unit.ML, true);
-        Ingredient sugar = seedIngredient("sugar", Ingredient.Category.OTHER, Ingredient.Unit.GRAMS, true);
+        Ingredient egg         = seedIngredient("egg",          Ingredient.Category.OTHER,     Ingredient.Unit.PIECES, false, eggs);
+        Ingredient milk        = seedIngredient("milk",         Ingredient.Category.DAIRY,     Ingredient.Unit.ML,     false, lactose);
+        Ingredient flour       = seedIngredient("flour",        Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,  false, gluten);
+        Ingredient butter      = seedIngredient("butter",       Ingredient.Category.DAIRY,     Ingredient.Unit.GRAMS,  false, lactose);
+        Ingredient pasta       = seedIngredient("pasta",        Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,  false, gluten);
+        Ingredient tomatoSauce = seedIngredient("tomato sauce", Ingredient.Category.VEGETABLE, Ingredient.Unit.ML,     false, null);
+        Ingredient cheese      = seedIngredient("cheese",       Ingredient.Category.DAIRY,     Ingredient.Unit.GRAMS,  false, lactose);
+
+        seedIngredient("pepper", Ingredient.Category.SPICE, Ingredient.Unit.TASTE, true, null);
+        seedIngredient("salt",   Ingredient.Category.SPICE, Ingredient.Unit.TASTE, true, null);
+        seedIngredient("oil",    Ingredient.Category.OTHER, Ingredient.Unit.ML,    true, null);
+        seedIngredient("sugar",  Ingredient.Category.OTHER, Ingredient.Unit.GRAMS, true, null);
 
         if (recipeRepository.count() == 0) {
             Recipe pancakes = recipeRepository.save(Recipe.builder()
@@ -73,15 +82,10 @@ public class DataSeeder implements CommandLineRunner {
             ));
             recipeRepository.save(pastaRecipe);
         }
-
-        if (allergyRepository.count() == 0) {
-            allergyRepository.save(Allergy.builder().name("gluten").build());
-            allergyRepository.save(Allergy.builder().name("lactose").build());
-            allergyRepository.save(Allergy.builder().name("nuts").build());
-        }
     }
 
-    private Ingredient seedIngredient(String name, Ingredient.Category category, Ingredient.Unit unit, boolean isPantry) {
+    private Ingredient seedIngredient(String name, Ingredient.Category category, Ingredient.Unit unit,
+                                      boolean isPantry, Allergy allergen) {
         return ingredientRepository.findByName(name)
                 .orElseGet(() -> ingredientRepository.save(
                         Ingredient.builder()
@@ -89,7 +93,15 @@ public class DataSeeder implements CommandLineRunner {
                                 .category(category)
                                 .defaultUnit(unit)
                                 .isPantryItem(isPantry)
+                                .allergen(allergen)
                                 .build()
+                ));
+    }
+
+    private Allergy seedAllergy(String name) {
+        return allergyRepository.findByName(name)
+                .orElseGet(() -> allergyRepository.save(
+                        Allergy.builder().name(name).build()
                 ));
     }
 }

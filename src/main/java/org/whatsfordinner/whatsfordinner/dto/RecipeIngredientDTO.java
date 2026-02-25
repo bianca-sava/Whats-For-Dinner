@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.whatsfordinner.whatsfordinner.model.Ingredient;
 
 @Data
 @NoArgsConstructor
@@ -12,5 +13,6 @@ import lombok.NoArgsConstructor;
 public class RecipeIngredientDTO {
     private String ingredientName;
     private Double quantity;
+    private Ingredient.Unit unit;
     private Boolean isOptional;
 }
