@@ -5,6 +5,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.whatsfordinner.whatsfordinner.dto.AddToFridgeRequestDTO;
 import org.whatsfordinner.whatsfordinner.dto.FridgeItemResponseDTO;
+import org.whatsfordinner.whatsfordinner.dto.ReceiptScanRequestDTO;
+import org.whatsfordinner.whatsfordinner.dto.ScannedIngredientDTO;
 import org.whatsfordinner.whatsfordinner.model.Ingredient;
 import org.whatsfordinner.whatsfordinner.model.User;
 import org.whatsfordinner.whatsfordinner.model.UserFridge;
@@ -22,6 +24,7 @@ public class FridgeService {
     private final UserFridgeRepository userFridgeRepository;
     private final UserRepository userRepository;
     private final IngredientRepository ingredientRepository;
+    private final AiReceiptScannerService aiReceiptScannerService;
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -29,9 +32,12 @@ public class FridgeService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
+    public List<ScannedIngredientDTO> scanReceipt(ReceiptScanRequestDTO request) {
+        return aiReceiptScannerService.scanReceipt(request.getBase64Image());
+    }
+
     public FridgeItemResponseDTO addToFridge(AddToFridgeRequestDTO request) {
         User user = getCurrentUser();
-
         Optional<UserFridge> existingItem = userFridgeRepository.findByUserAndIngredientId(user, request.getIngredientId());
 
         if (existingItem.isPresent()) {
@@ -41,21 +47,14 @@ public class FridgeService {
         Ingredient ingredient = ingredientRepository.findById(request.getIngredientId())
                 .orElseThrow(() -> new RuntimeException("Ingredient not found"));
 
-        UserFridge fridgeItem = UserFridge.builder()
-                .user(user)
-                .ingredient(ingredient)
-                .build();
-
+        UserFridge fridgeItem = UserFridge.builder().user(user).ingredient(ingredient).build();
         UserFridge saved = userFridgeRepository.save(fridgeItem);
         return mapToDTO(saved);
     }
 
     public List<FridgeItemResponseDTO> getFridgeItems() {
         User user = getCurrentUser();
-        return userFridgeRepository.findByUser(user)
-                .stream()
-                .map(this::mapToDTO)
-                .toList();
+        return userFridgeRepository.findByUser(user).stream().map(this::mapToDTO).toList();
     }
 
     public void removeFromFridge(Long fridgeItemId) {
@@ -66,7 +65,6 @@ public class FridgeService {
         if (!fridgeItem.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Unauthorized");
         }
-
         userFridgeRepository.deleteById(fridgeItemId);
     }
 
