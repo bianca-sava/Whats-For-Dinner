@@ -4,9 +4,8 @@ import LoginPage from "./pages/LoginPage.tsx";
 import RegisterPage from "./pages/RegisterPage.tsx";
 import Navbar from "./components/Navbar";
 import FridgePage from "./pages/FridgePage";
-
-const RecipesPage = () => <div className="p-8 text-center text-gray-400">Recipes Page — coming soon</div>;
-const ProfilePage = () => <div className="p-8 text-center text-gray-400">Profile Page — coming soon</div>;
+import RecipesPage from "./pages/RecipesPage";
+import ProfilePage from "./pages/ProfilePage";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     return (
