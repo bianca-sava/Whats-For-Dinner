@@ -6,6 +6,7 @@ import OnboardingPage from "./pages/OnboardingPage.tsx";
 import Navbar from "./components/Navbar";
 import FridgePage from "./pages/FridgePage";
 import RecipesPage from "./pages/RecipesPage";
+import RecipePage from "./pages/RecipePage";
 import ProfilePage from "./pages/ProfilePage";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +34,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
+            {/* Onboarding — must be logged in but hasn't completed quiz */}
             <Route
                 path="/onboarding"
                 element={
@@ -69,6 +71,16 @@ function App() {
                     <ProtectedRoute>
                         <AuthenticatedLayout>
                             <ProfilePage />
+                        </AuthenticatedLayout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/recipes/:id"
+                element={
+                    <ProtectedRoute>
+                        <AuthenticatedLayout>
+                            <RecipePage />
                         </AuthenticatedLayout>
                     </ProtectedRoute>
                 }

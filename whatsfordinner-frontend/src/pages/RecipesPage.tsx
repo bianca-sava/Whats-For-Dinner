@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.tsx";
 import axios from "axios";
 
@@ -39,29 +40,15 @@ const DIET_LABELS: Record<string, string> = {
     VEGAN: "Vegan",
 };
 
-const UNIT_LABELS: Record<string, string> = {
-    GRAMS: "g",
-    ML: "ml",
-    PIECES: "",
-    TEASPOON: "tsp",
-    TABLESPOON: "tbsp",
-    TASTE: "to taste",
-};
 
-function formatQuantity(quantity: number, unit: string): string {
-    if (unit === "TASTE") return "to taste";
-    const label = UNIT_LABELS[unit] ?? unit.toLowerCase();
-    const qty = quantity % 1 === 0 ? quantity.toFixed(0) : quantity.toString();
-    return label ? `${qty} ${label}` : qty;
-}
 
 export default function RecipesPage() {
     const { token } = useAuth();
+    const navigate = useNavigate();
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
     const [searchError, setSearchError] = useState("");
-    const [expandedId, setExpandedId] = useState<number | null>(null);
     const [prefsLoading, setPrefsLoading] = useState(true);
     const [prefsError, setPrefsError] = useState("");
 
@@ -91,7 +78,6 @@ export default function RecipesPage() {
         setLoading(true);
         setSearched(true);
         setSearchError("");
-        setExpandedId(null);
         try {
             const res = await axios.post(
                 "http://localhost:8080/api/recipes/search",
@@ -115,9 +101,6 @@ export default function RecipesPage() {
         setDietType(prev => prev === type ? null : type);
     };
 
-    const toggleExpand = (id: number) => {
-        setExpandedId(prev => prev === id ? null : id);
-    };
 
     return (
         <div>
@@ -268,14 +251,13 @@ export default function RecipesPage() {
                         {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} found
                     </p>
                     {recipes.map(recipe => {
-                        const isExpanded = expandedId === recipe.id;
                         const canMake = recipe.missingIngredients.length === 0;
                         const hasAllergens = recipe.allergenWarnings?.length > 0;
 
                         return (
                             <div key={recipe.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
                                 <button
-                                    onClick={() => toggleExpand(recipe.id)}
+                                    onClick={() => navigate(`/recipes/${recipe.id}`)}
                                     className="w-full px-5 py-4 flex items-center justify-between text-left"
                                 >
                                     <div className="flex-1 min-w-0">
@@ -310,59 +292,13 @@ export default function RecipesPage() {
                                         </div>
                                     </div>
                                     <svg
-                                        className={`w-4 h-4 text-gray-400 flex-shrink-0 ml-3 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                        className="w-4 h-4 text-gray-400 flex-shrink-0 ml-3"
                                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                                     >
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                     </svg>
                                 </button>
 
-                                {isExpanded && (
-                                    <div className="px-5 pb-5 border-t border-gray-50">
-                                        {recipe.description && (
-                                            <p className="text-sm text-gray-500 mt-4 mb-4">{recipe.description}</p>
-                                        )}
-
-                                        {/* Allergen warning banner */}
-                                        {hasAllergens && (
-                                            <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
-                                                <p className="text-xs font-semibold text-red-600 mb-1">⚠ Allergen warning</p>
-                                                <p className="text-xs text-red-500">
-                                                    This recipe contains: {recipe.allergenWarnings.join(", ")}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {recipe.missingIngredients.length > 0 && (
-                                            <div className="bg-amber-50 rounded-xl p-3 mb-4">
-                                                <p className="text-xs font-semibold text-amber-700 mb-1">You're missing:</p>
-                                                <p className="text-xs text-amber-600">{recipe.missingIngredients.join(", ")}</p>
-                                            </div>
-                                        )}
-
-                                        <div className="mb-4">
-                                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Ingredients</p>
-                                            <div className="space-y-1.5">
-                                                {recipe.ingredients.map((ing, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between">
-                                                        <span className={`text-sm capitalize ${ing.isOptional ? "text-gray-400" : "text-gray-700"}`}>
-                                                            {ing.ingredientName}
-                                                            {ing.isOptional && <span className="text-xs ml-1">(optional)</span>}
-                                                        </span>
-                                                        <span className="text-sm text-gray-400 ml-4 flex-shrink-0">
-                                                            {formatQuantity(ing.quantity, ing.unit)}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Instructions</p>
-                                            <p className="text-sm text-gray-600 leading-relaxed">{recipe.instructions}</p>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         );
                     })}

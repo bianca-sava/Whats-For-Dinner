@@ -16,6 +16,7 @@ import org.whatsfordinner.whatsfordinner.repository.UserPreferencesRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserRepository;
 
 import java.util.List;
+import org.whatsfordinner.whatsfordinner.model.RecipeIngredient;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -138,9 +139,53 @@ public class RecipeService {
                 .servings(recipe.getServings())
                 .mealType(recipe.getMealType())
                 .dietType(recipe.getDietType())
+                .imageUrl(recipe.getImageUrl())
                 .ingredients(ingredients)
                 .missingIngredients(missingIngredients)
                 .allergenWarnings(allergenWarnings)
                 .build();
     }
+
+    public RecipeResponseDTO getRecipeById(Long id) {
+        User user = getCurrentUser();
+
+        Set<Long> fridgeIngredientIds = userFridgeRepository.findByUser(user)
+                .stream()
+                .map(userFridge -> userFridge.getIngredient().getId())
+                .collect(Collectors.toSet());
+
+        Set<Long> userAllergyIds = userAllergyRepository.findByUser(user)
+                .stream()
+                .map(ua -> ua.getAllergy().getId())
+                .collect(Collectors.toSet());
+
+        Recipe recipe = recipeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        return mapToDTO(recipe, fridgeIngredientIds, userAllergyIds);
+    }
+
+    public void markCooked(Long recipeId, List<String> consumedIngredientNames) {
+        User user = getCurrentUser();
+
+        Recipe recipe = recipeRepository.findById(recipeId)
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        java.util.Map<String, Long> nameToId = recipe.getRecipeIngredients()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        ri -> ri.getIngredient().getName(),
+                        ri -> ri.getIngredient().getId(),
+                        (a, b) -> a
+                ));
+
+        consumedIngredientNames.forEach(name -> {
+            Long ingredientId = nameToId.get(name);
+            if (ingredientId != null) {
+                userFridgeRepository.findByUserAndIngredientId(user, ingredientId)
+                        .ifPresent(userFridgeRepository::delete);
+            }
+        });
+    }
+
 }

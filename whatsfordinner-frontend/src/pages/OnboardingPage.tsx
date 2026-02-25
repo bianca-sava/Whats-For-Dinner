@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { useAuth } from "../context/AuthContext.tsx";
 
 interface OnboardingData {
@@ -34,7 +35,7 @@ const SERVING_OPTIONS = [1, 2, 3, 4, 5, 6];
 
 export default function OnboardingPage() {
     const navigate = useNavigate();
-    const { completeOnboarding } = useAuth();
+    const { token, completeOnboarding, refreshUserName } = useAuth();
 
     const [step, setStep] = useState(0);
     const [data, setData] = useState<OnboardingData>({
@@ -69,9 +70,20 @@ export default function OnboardingPage() {
 
     const handleFinish = async () => {
         setSubmitting(true);
-        // TODO: replace with POST /api/auth/onboarding once backend is ready
-        await new Promise(r => setTimeout(r, 600)); // simulate async
+        await axios.post(
+            "http://localhost:8080/api/auth/onboarding",
+            {
+                firstName: data.firstName,
+                lastName: data.lastName || null,
+                isVegetarian: data.isVegetarian,
+                isVegan: data.isVegan,
+                defaultServings: data.defaultServings,
+                allergyIds: Array.from(data.allergyIds),
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
         completeOnboarding();
+        refreshUserName();
         navigate("/fridge");
     };
 
@@ -126,7 +138,7 @@ export default function OnboardingPage() {
                                         value={data.firstName}
                                         onChange={e => setData(d => ({ ...d, firstName: e.target.value }))}
                                         autoFocus
-                                        placeholder="e.g. Maria"
+                                        placeholder="e.g. Olivia"
                                         className="w-full h-11 bg-cream-50 border border-cream-200 rounded-xl px-4 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
                                     />
                                 </div>
@@ -138,7 +150,7 @@ export default function OnboardingPage() {
                                         type="text"
                                         value={data.lastName}
                                         onChange={e => setData(d => ({ ...d, lastName: e.target.value }))}
-                                        placeholder="e.g. Popescu"
+                                        placeholder="e.g. Smith"
                                         className="w-full h-11 bg-cream-50 border border-cream-200 rounded-xl px-4 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
                                     />
                                 </div>
@@ -263,10 +275,7 @@ export default function OnboardingPage() {
                                                 : "border-gray-100 bg-gray-50 hover:border-gray-200"
                                         }`}
                                     >
-                                        <span className="text-2xl mb-1">
-                                            {n === 1 ? "🧑" : n <= 2 ? "👫" : n <= 4 ? "👨‍👩‍👧‍👦" : "🏘️"}
-                                        </span>
-                                        <span className={`text-lg font-bold ${data.defaultServings === n ? "text-primary-600" : "text-gray-700"}`}>
+                                        <span className={`text-3xl font-bold ${data.defaultServings === n ? "text-primary-600" : "text-gray-700"}`}>
                                             {n}
                                         </span>
                                         <span className="text-xs text-gray-400">

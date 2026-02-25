@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import org.whatsfordinner.whatsfordinner.dto.AddAllergyRequestDTO;
 import org.whatsfordinner.whatsfordinner.dto.AllergyResponseDTO;
 import org.whatsfordinner.whatsfordinner.dto.UserPreferencesDTO;
+import org.whatsfordinner.whatsfordinner.dto.UserResponseDTO;
 import org.whatsfordinner.whatsfordinner.service.UserProfileService;
 
 import java.util.List;
@@ -17,6 +18,11 @@ import java.util.List;
 public class UserProfileController {
 
     private final UserProfileService userProfileService;
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDTO> getMe() {
+        return ResponseEntity.ok(userProfileService.getMe());
+    }
 
     @GetMapping("/preferences")
     public ResponseEntity<UserPreferencesDTO> getPreferences() {

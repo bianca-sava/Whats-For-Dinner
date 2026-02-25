@@ -20,4 +20,15 @@ public class RecipeController {
     public ResponseEntity<List<RecipeResponseDTO>> searchRecipes(@RequestBody RecipeSearchRequestDTO request) {
         return ResponseEntity.ok(recipeService.searchRecipes(request));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<RecipeResponseDTO> getRecipe(@PathVariable Long id) {
+        return ResponseEntity.ok(recipeService.getRecipeById(id));
+    }
+
+    @PostMapping("/{id}/cooked")
+    public ResponseEntity<Void> markCooked(@PathVariable Long id, @RequestBody List<String> consumedIngredientNames) {
+        recipeService.markCooked(id, consumedIngredientNames);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -1,17 +1,25 @@
 package org.whatsfordinner.whatsfordinner.service;
 
-import org.whatsfordinner.whatsfordinner.dto.LoginRequestDTO;
-import org.whatsfordinner.whatsfordinner.dto.RegisterRequestDTO;
-import org.whatsfordinner.whatsfordinner.dto.UserResponseDTO;
-import org.whatsfordinner.whatsfordinner.model.User;
-import org.whatsfordinner.whatsfordinner.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.whatsfordinner.whatsfordinner.dto.LoginRequestDTO;
+import org.whatsfordinner.whatsfordinner.dto.OnboardingRequestDTO;
+import org.whatsfordinner.whatsfordinner.dto.RegisterRequestDTO;
+import org.whatsfordinner.whatsfordinner.dto.UserResponseDTO;
+import org.whatsfordinner.whatsfordinner.model.Allergy;
+import org.whatsfordinner.whatsfordinner.model.User;
+import org.whatsfordinner.whatsfordinner.model.UserAllergy;
+import org.whatsfordinner.whatsfordinner.model.UserPreferences;
+import org.whatsfordinner.whatsfordinner.repository.AllergyRepository;
+import org.whatsfordinner.whatsfordinner.repository.UserAllergyRepository;
+import org.whatsfordinner.whatsfordinner.repository.UserPreferencesRepository;
+import org.whatsfordinner.whatsfordinner.repository.UserRepository;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +28,9 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AllergyRepository allergyRepository;
+    private final UserAllergyRepository userAllergyRepository;
+    private final UserPreferencesRepository userPreferencesRepository;
 
     public UserResponseDTO register(RegisterRequestDTO request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -29,6 +40,7 @@ public class AuthService {
         User user = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .hasCompletedOnboarding(false)
                 .build();
 
         User saved = userRepository.save(user);
@@ -36,10 +48,11 @@ public class AuthService {
         return UserResponseDTO.builder()
                 .id(saved.getId())
                 .email(saved.getEmail())
+                .hasCompletedOnboarding(saved.getHasCompletedOnboarding())
                 .build();
     }
 
-    public Map<String, String> login(LoginRequestDTO request) {
+    public Map<String, Object> login(LoginRequestDTO request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -48,7 +61,42 @@ public class AuthService {
         }
 
         String token = jwtService.generateToken(user.getEmail());
-        return Map.of("token", token);
+        return Map.of(
+                "token", token,
+                "hasCompletedOnboarding", Boolean.TRUE.equals(user.getHasCompletedOnboarding())
+        );
     }
 
+    @Transactional
+    public void completeOnboarding(OnboardingRequestDTO request) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setDefaultServings(request.getDefaultServings());
+        user.setHasCompletedOnboarding(true);
+        userRepository.save(user);
+
+        UserPreferences preferences = userPreferencesRepository.findByUser(user)
+                .orElse(UserPreferences.builder().user(user).build());
+        preferences.setIsVegetarian(request.getIsVegetarian());
+        preferences.setIsVegan(request.getIsVegan());
+        userPreferencesRepository.save(preferences);
+
+        userAllergyRepository.deleteAll(userAllergyRepository.findByUser(user));
+
+        if (request.getAllergyIds() != null && !request.getAllergyIds().isEmpty()) {
+            List<UserAllergy> userAllergies = request.getAllergyIds().stream()
+                    .map(id -> allergyRepository.findById(id)
+                            .orElseThrow(() -> new RuntimeException("Allergy not found: " + id)))
+                    .map(allergy -> UserAllergy.builder()
+                            .user(user)
+                            .allergy(allergy)
+                            .build())
+                    .toList();
+            userAllergyRepository.saveAll(userAllergies);
+        }
+    }
 }
