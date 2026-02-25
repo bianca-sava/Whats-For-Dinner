@@ -5,6 +5,7 @@ import axios from "axios";
 interface RecipeIngredient {
     ingredientName: string;
     quantity: number;
+    unit: string;
     isOptional: boolean;
 }
 
@@ -19,6 +20,7 @@ interface Recipe {
     dietType: string;
     ingredients: RecipeIngredient[];
     missingIngredients: string[];
+    allergenWarnings: string[];
 }
 
 const MEAL_TYPES = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
@@ -37,13 +39,31 @@ const DIET_LABELS: Record<string, string> = {
     VEGAN: "Vegan",
 };
 
+const UNIT_LABELS: Record<string, string> = {
+    GRAMS: "g",
+    ML: "ml",
+    PIECES: "",
+    TEASPOON: "tsp",
+    TABLESPOON: "tbsp",
+    TASTE: "to taste",
+};
+
+function formatQuantity(quantity: number, unit: string): string {
+    if (unit === "TASTE") return "to taste";
+    const label = UNIT_LABELS[unit] ?? unit.toLowerCase();
+    const qty = quantity % 1 === 0 ? quantity.toFixed(0) : quantity.toString();
+    return label ? `${qty} ${label}` : qty;
+}
+
 export default function RecipesPage() {
     const { token } = useAuth();
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
+    const [searchError, setSearchError] = useState("");
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [prefsLoading, setPrefsLoading] = useState(true);
+    const [prefsError, setPrefsError] = useState("");
 
     const [mealType, setMealType] = useState<string | null>(null);
     const [dietType, setDietType] = useState<string | null>(null);
@@ -59,7 +79,7 @@ export default function RecipesPage() {
                 if (isVegan) setDietType("VEGAN");
                 else if (isVegetarian) setDietType("VEGETARIAN");
             } catch {
-                // silent
+                setPrefsError("Couldn't load your dietary preferences. You can still search manually.");
             } finally {
                 setPrefsLoading(false);
             }
@@ -70,6 +90,7 @@ export default function RecipesPage() {
     const search = async () => {
         setLoading(true);
         setSearched(true);
+        setSearchError("");
         setExpandedId(null);
         try {
             const res = await axios.post(
@@ -84,6 +105,7 @@ export default function RecipesPage() {
             setRecipes(res.data);
         } catch {
             setRecipes([]);
+            setSearchError("Failed to search recipes. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -104,6 +126,16 @@ export default function RecipesPage() {
                 <h1 className="text-2xl font-serif font-bold text-gray-800">Recipes</h1>
                 <p className="text-sm text-gray-400 mt-0.5">Find what you can cook with what you have</p>
             </div>
+
+            {/* Preferences warning */}
+            {prefsError && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-xl p-3 mb-4 flex items-start gap-2">
+                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    </svg>
+                    {prefsError}
+                </div>
+            )}
 
             {/* Filters */}
             <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
@@ -135,7 +167,7 @@ export default function RecipesPage() {
                     <div>
                         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-2">
                             Diet
-                            {dietType && (
+                            {dietType && !prefsError && (
                                 <span className="ml-2 text-primary-400 normal-case font-normal">from your profile</span>
                             )}
                         </label>
@@ -149,7 +181,7 @@ export default function RecipesPage() {
                                         dietType === type
                                             ? "bg-primary-500 text-white"
                                             : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                                    }`}
+                                    } disabled:opacity-40`}
                                 >
                                     {DIET_LABELS[type]}
                                 </button>
@@ -186,6 +218,16 @@ export default function RecipesPage() {
                 </button>
             </div>
 
+            {/* Search error */}
+            {searchError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-4 mb-4 flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {searchError}
+                </div>
+            )}
+
             {/* Loading */}
             {loading && (
                 <div className="flex items-center justify-center py-20">
@@ -207,7 +249,7 @@ export default function RecipesPage() {
             )}
 
             {/* No results */}
-            {!loading && searched && recipes.length === 0 && (
+            {!loading && searched && recipes.length === 0 && !searchError && (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
                         <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -228,6 +270,7 @@ export default function RecipesPage() {
                     {recipes.map(recipe => {
                         const isExpanded = expandedId === recipe.id;
                         const canMake = recipe.missingIngredients.length === 0;
+                        const hasAllergens = recipe.allergenWarnings?.length > 0;
 
                         return (
                             <div key={recipe.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -245,6 +288,14 @@ export default function RecipesPage() {
                                             ) : (
                                                 <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">
                                                     {recipe.missingIngredients.length} missing
+                                                </span>
+                                            )}
+                                            {hasAllergens && (
+                                                <span className="px-2 py-0.5 bg-red-50 text-red-500 text-xs font-medium rounded-full flex items-center gap-1">
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                                    </svg>
+                                                    Contains allergen
                                                 </span>
                                             )}
                                         </div>
@@ -272,6 +323,16 @@ export default function RecipesPage() {
                                             <p className="text-sm text-gray-500 mt-4 mb-4">{recipe.description}</p>
                                         )}
 
+                                        {/* Allergen warning banner */}
+                                        {hasAllergens && (
+                                            <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
+                                                <p className="text-xs font-semibold text-red-600 mb-1">⚠ Allergen warning</p>
+                                                <p className="text-xs text-red-500">
+                                                    This recipe contains: {recipe.allergenWarnings.join(", ")}
+                                                </p>
+                                            </div>
+                                        )}
+
                                         {recipe.missingIngredients.length > 0 && (
                                             <div className="bg-amber-50 rounded-xl p-3 mb-4">
                                                 <p className="text-xs font-semibold text-amber-700 mb-1">You're missing:</p>
@@ -288,7 +349,9 @@ export default function RecipesPage() {
                                                             {ing.ingredientName}
                                                             {ing.isOptional && <span className="text-xs ml-1">(optional)</span>}
                                                         </span>
-                                                        <span className="text-sm text-gray-400">{ing.quantity}</span>
+                                                        <span className="text-sm text-gray-400 ml-4 flex-shrink-0">
+                                                            {formatQuantity(ing.quantity, ing.unit)}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
