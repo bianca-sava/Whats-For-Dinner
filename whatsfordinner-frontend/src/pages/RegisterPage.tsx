@@ -44,7 +44,6 @@ export default function RegisterPage() {
 
                 {/* Hero */}
                 <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-3xl p-8 mb-6 text-center relative overflow-hidden">
-                    {/* Decorative circles */}
                     <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
                     <div className="absolute -bottom-8 -left-4 w-32 h-32 bg-white/5 rounded-full" />
                     <div className="relative z-10">

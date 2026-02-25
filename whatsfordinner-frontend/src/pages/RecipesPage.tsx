@@ -51,7 +51,6 @@ export default function RecipesPage() {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Load user preferences and pre-populate diet filter
     useEffect(() => {
         const fetchPrefs = async () => {
             try {
