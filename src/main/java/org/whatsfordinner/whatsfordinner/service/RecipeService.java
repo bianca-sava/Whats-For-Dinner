@@ -7,11 +7,11 @@ import org.whatsfordinner.whatsfordinner.dto.RecipeIngredientDTO;
 import org.whatsfordinner.whatsfordinner.dto.RecipeResponseDTO;
 import org.whatsfordinner.whatsfordinner.dto.RecipeSearchRequestDTO;
 import org.whatsfordinner.whatsfordinner.model.Recipe;
-import org.whatsfordinner.whatsfordinner.model.RecipeIngredient;
 import org.whatsfordinner.whatsfordinner.model.User;
-import org.whatsfordinner.whatsfordinner.model.UserFridge;
+import org.whatsfordinner.whatsfordinner.model.UserPreferences;
 import org.whatsfordinner.whatsfordinner.repository.RecipeRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserFridgeRepository;
+import org.whatsfordinner.whatsfordinner.repository.UserPreferencesRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserRepository;
 
 import java.util.List;
@@ -25,6 +25,7 @@ public class RecipeService {
     private final RecipeRepository recipeRepository;
     private final UserFridgeRepository userFridgeRepository;
     private final UserRepository userRepository;
+    private final UserPreferencesRepository userPreferencesRepository;
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -35,7 +36,6 @@ public class RecipeService {
     public List<RecipeResponseDTO> searchRecipes(RecipeSearchRequestDTO request) {
         User user = getCurrentUser();
 
-        // ingredientele pe care le are userul in frigider
         Set<Long> fridgeIngredientIds = userFridgeRepository.findByUser(user)
                 .stream()
                 .map(UserFridge -> UserFridge.getIngredient().getId())
@@ -45,10 +45,25 @@ public class RecipeService {
                 ? request.getMaxMissingIngredients()
                 : 0;
 
+        Recipe.DietType effectiveDietType = request.getDietType();
+        if (effectiveDietType == null) {
+            UserPreferences prefs = userPreferencesRepository.findByUser(user).orElse(null);
+            if (prefs != null) {
+                if (Boolean.TRUE.equals(prefs.getIsVegan())) {
+                    effectiveDietType = Recipe.DietType.VEGAN;
+                } else if (Boolean.TRUE.equals(prefs.getIsVegetarian())) {
+                    effectiveDietType = Recipe.DietType.VEGETARIAN;
+                }
+            }
+        }
+
+        final Recipe.DietType finalDietType =
+                effectiveDietType == Recipe.DietType.NORMAL ? null : effectiveDietType;
+
         return recipeRepository.findAll()
                 .stream()
                 .filter(recipe -> matchesMealType(recipe, request.getMealType()))
-                .filter(recipe -> matchesDietType(recipe, request.getDietType()))
+                .filter(recipe -> matchesDietType(recipe, finalDietType))
                 .filter(recipe -> countMissingIngredients(recipe, fridgeIngredientIds) <= maxMissing)
                 .map(recipe -> mapToDTO(recipe, fridgeIngredientIds))
                 .collect(Collectors.toList());
@@ -61,7 +76,12 @@ public class RecipeService {
 
     private boolean matchesDietType(Recipe recipe, Recipe.DietType dietType) {
         if (dietType == null) return true;
-        return recipe.getDietType() == dietType;
+        return switch (dietType) {
+            case VEGAN -> recipe.getDietType() == Recipe.DietType.VEGAN;
+            case VEGETARIAN -> recipe.getDietType() == Recipe.DietType.VEGETARIAN
+                    || recipe.getDietType() == Recipe.DietType.VEGAN;
+            case NORMAL -> true;
+        };
     }
 
     private long countMissingIngredients(Recipe recipe, Set<Long> fridgeIngredientIds) {

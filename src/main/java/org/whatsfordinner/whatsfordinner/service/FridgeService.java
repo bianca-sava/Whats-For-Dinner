@@ -1,5 +1,6 @@
 package org.whatsfordinner.whatsfordinner.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class FridgeService {
 
     private final UserFridgeRepository userFridgeRepository;
@@ -52,9 +54,14 @@ public class FridgeService {
         return mapToDTO(saved);
     }
 
+
     public List<FridgeItemResponseDTO> getFridgeItems() {
         User user = getCurrentUser();
-        return userFridgeRepository.findByUser(user).stream().map(this::mapToDTO).toList();
+        return userFridgeRepository.findByUser(user)
+                .stream()
+                .filter(item -> item.getIngredient() != null)
+                .map(this::mapToDTO)
+                .toList();
     }
 
     public void removeFromFridge(Long fridgeItemId) {
@@ -76,5 +83,26 @@ public class FridgeService {
                 .category(fridgeItem.getIngredient().getCategory())
                 .isPantryItem(fridgeItem.getIngredient().getIsPantryItem())
                 .build();
+    }
+
+    public List<FridgeItemResponseDTO> addMultipleToFridge(List<Long> ingredientIds) {
+        User user = getCurrentUser();
+
+        return ingredientIds.stream()
+                .map(id -> {
+                    Optional<UserFridge> existing = userFridgeRepository.findByUserAndIngredientId(user, id);
+                    if (existing.isPresent()) return existing.get();
+
+                    Ingredient ing = ingredientRepository.findById(id)
+                            .orElseThrow(() -> new RuntimeException("Ingredient not found: " + id));
+
+                    UserFridge newItem = UserFridge.builder()
+                            .user(user)
+                            .ingredient(ing)
+                            .build();
+                    return userFridgeRepository.save(newItem);
+                })
+                .map(this::mapToDTO)
+                .toList();
     }
 }
