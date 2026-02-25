@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.tsx";
 import axios from "axios";
 
 export default function RegisterPage() {
@@ -9,6 +10,7 @@ export default function RegisterPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleSubmit = async () => {
         setError("");
@@ -25,11 +27,11 @@ export default function RegisterPage() {
 
         setLoading(true);
         try {
-            await axios.post("http://localhost:8080/api/auth/register", {
-                email,
-                password,
-            });
-            navigate("/login");
+            await axios.post("http://localhost:8080/api/auth/register", { email, password });
+            // Auto-login after register, mark onboarding as not complete
+            const loginRes = await axios.post("http://localhost:8080/api/auth/login", { email, password });
+            login(loginRes.data.token, false);
+            navigate("/onboarding");
         } catch (err: any) {
             const msg = err?.response?.data?.message;
             setError(typeof msg === "string" ? msg : "Registration failed. Please try again.");
@@ -59,15 +61,11 @@ export default function RegisterPage() {
                     <p className="text-sm text-gray-400 mb-5">Start cooking smarter today</p>
 
                     {error && (
-                        <div className="bg-red-50 text-red-600 text-sm rounded-xl p-3 mb-4">
-                            {error}
-                        </div>
+                        <div className="bg-red-50 text-red-600 text-sm rounded-xl p-3 mb-4">{error}</div>
                     )}
 
                     <div className="mb-4">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
-                            Email
-                        </label>
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Email</label>
                         <input
                             type="email"
                             value={email}
@@ -78,9 +76,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="mb-4">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
-                            Password
-                        </label>
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Password</label>
                         <input
                             type="password"
                             value={password}
@@ -91,19 +87,17 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="mb-5">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
-                            Confirm Password
-                        </label>
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Confirm Password</label>
                         <input
                             type="password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                             className="w-full h-11 bg-cream-50 border border-cream-200 rounded-xl px-4 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all"
                             placeholder="••••••••"
                         />
                     </div>
 
-                    {/* Password strength hint */}
                     {password.length > 0 && (
                         <div className="mb-4 -mt-3">
                             <div className="flex gap-1 mt-1">
@@ -111,27 +105,17 @@ export default function RegisterPage() {
                                     <div
                                         key={i}
                                         className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                                            password.length === 0
-                                                ? "bg-gray-100"
-                                                : password.length < 6
-                                                    ? i === 0 ? "bg-red-400" : "bg-gray-100"
-                                                    : password.length < 8
-                                                        ? i < 2 ? "bg-orange-400" : "bg-gray-100"
-                                                        : password.length < 12
-                                                            ? i < 3 ? "bg-yellow-400" : "bg-gray-100"
+                                            password.length === 0 ? "bg-gray-100"
+                                                : password.length < 6 ? i === 0 ? "bg-red-400" : "bg-gray-100"
+                                                    : password.length < 8 ? i < 2 ? "bg-orange-400" : "bg-gray-100"
+                                                        : password.length < 12 ? i < 3 ? "bg-yellow-400" : "bg-gray-100"
                                                             : "bg-green-400"
                                         }`}
                                     />
                                 ))}
                             </div>
                             <p className="text-xs text-gray-400 mt-1">
-                                {password.length < 6
-                                    ? "Too short"
-                                    : password.length < 8
-                                        ? "Almost there"
-                                        : password.length < 12
-                                            ? "Good password"
-                                            : "Strong password"}
+                                {password.length < 6 ? "Too short" : password.length < 8 ? "Almost there" : password.length < 12 ? "Good password" : "Strong password"}
                             </p>
                         </div>
                     )}
@@ -146,9 +130,7 @@ export default function RegisterPage() {
 
                     <p className="text-center text-sm text-gray-500 mt-4">
                         Already have an account?{" "}
-                        <Link to="/login" className="text-primary-500 font-semibold">
-                            Sign In
-                        </Link>
+                        <Link to="/login" className="text-primary-500 font-semibold">Sign In</Link>
                     </p>
                 </div>
             </div>

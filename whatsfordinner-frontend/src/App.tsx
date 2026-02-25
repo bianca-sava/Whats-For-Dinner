@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage.tsx";
 import RegisterPage from "./pages/RegisterPage.tsx";
+import OnboardingPage from "./pages/OnboardingPage.tsx";
 import Navbar from "./components/Navbar";
 import FridgePage from "./pages/FridgePage";
 import RecipesPage from "./pages/RecipesPage";
@@ -24,13 +25,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, hasCompletedOnboarding } = useAuth();
 
     return (
         <Routes>
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+
+            <Route
+                path="/onboarding"
+                element={
+                    <ProtectedRoute>
+                        <OnboardingPage />
+                    </ProtectedRoute>
+                }
+            />
 
             {/* Protected routes */}
             <Route
@@ -67,7 +77,13 @@ function App() {
             {/* Default redirect */}
             <Route
                 path="/"
-                element={<Navigate to={isAuthenticated ? "/fridge" : "/login"} />}
+                element={
+                    !isAuthenticated
+                        ? <Navigate to="/login" />
+                        : !hasCompletedOnboarding
+                            ? <Navigate to="/onboarding" />
+                            : <Navigate to="/fridge" />
+                }
             />
         </Routes>
     );
