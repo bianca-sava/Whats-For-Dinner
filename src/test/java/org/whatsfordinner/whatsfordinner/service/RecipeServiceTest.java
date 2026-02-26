@@ -40,21 +40,17 @@ class RecipeServiceTest {
     private Ingredient pasta;
     private Ingredient egg;
 
-    // SINGLE @BeforeEach — everything initialized here in order
     @BeforeEach
     void setUp() {
-        // 1. Security context
         Authentication auth = mock(Authentication.class);
         when(auth.getName()).thenReturn("test@test.com");
         SecurityContext ctx = mock(SecurityContext.class);
         when(ctx.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(ctx);
 
-        // 2. User with UUID
         user = User.builder().email("test@test.com").build();
         user.setId(UUID.randomUUID());
 
-        // 3. Ingredients
         pasta = Ingredient.builder().id(1L).name("pasta")
                 .isPantryItem(false).category(Ingredient.Category.GRAIN)
                 .defaultUnit(Ingredient.Unit.GRAMS).build();
@@ -62,7 +58,6 @@ class RecipeServiceTest {
                 .isPantryItem(false).category(Ingredient.Category.OTHER)
                 .defaultUnit(Ingredient.Unit.PIECES).build();
 
-        // 4. Recipes
         veganRecipe = Recipe.builder().id(1L).name("Vegan Pasta")
                 .mealType(Recipe.MealType.LUNCH).dietType(Recipe.DietType.VEGAN)
                 .prepTime(20).servings(2).build();
@@ -84,7 +79,7 @@ class RecipeServiceTest {
                 .prepTime(15).servings(2).build();
         normalRecipe.setRecipeIngredients(List.of());
 
-        // 5. Common mocks — user is not null here
+
         when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(user));
         when(userFridgeRepository.findByUser(user)).thenReturn(List.of());
         when(userAllergyRepository.findByUser(user)).thenReturn(List.of());
