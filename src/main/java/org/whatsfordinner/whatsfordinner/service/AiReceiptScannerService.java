@@ -23,18 +23,19 @@ public class AiReceiptScannerService {
     private String geminiApiKey;
 
     private final IngredientRepository ingredientRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     public List<ScannedIngredientDTO> scanReceipt(String base64Image) {
         List<Ingredient> allIngredients = ingredientRepository.findAll();
         StringBuilder ingredientsList = new StringBuilder();
         for (Ingredient ing : allIngredients) {
-            ingredientsList.append("ID: ").append(ing.getId()).append(" | Name: ").append(ing.getName()).append("\n");
+            ingredientsList.append("ID: ").append(ing.getId())
+                    .append(" | Name: ").append(ing.getName()).append("\n");
         }
 
         String promptText = "You are an assistant that reads shopping receipts. Items may be in Romanian. " +
-                "Allowed ingredients from my database:\n" + ingredientsList.toString() +
+                "Allowed ingredients from my database:\n" + ingredientsList +
                 "\nTask: Read receipt, ignore non-food. Map food items to my allowed list. " +
                 "Return ONLY a JSON array: [{\"ingredientId\": ID, \"receiptName\": \"Name on receipt\", \"mappedName\": \"Name from my list\"}]";
 
