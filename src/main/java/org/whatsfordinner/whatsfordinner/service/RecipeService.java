@@ -6,8 +6,6 @@ import org.springframework.stereotype.Service;
 import org.whatsfordinner.whatsfordinner.dto.RecipeIngredientDTO;
 import org.whatsfordinner.whatsfordinner.dto.RecipeResponseDTO;
 import org.whatsfordinner.whatsfordinner.dto.RecipeSearchRequestDTO;
-import org.whatsfordinner.whatsfordinner.exception.NotFoundException;
-import org.whatsfordinner.whatsfordinner.model.Allergy;
 import org.whatsfordinner.whatsfordinner.model.Recipe;
 import org.whatsfordinner.whatsfordinner.model.User;
 import org.whatsfordinner.whatsfordinner.model.UserPreferences;
@@ -18,8 +16,7 @@ import org.whatsfordinner.whatsfordinner.repository.UserPreferencesRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserRepository;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import org.whatsfordinner.whatsfordinner.model.RecipeIngredient;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,39 +31,31 @@ public class RecipeService {
     private final UserAllergyRepository userAllergyRepository;
 
     private User getCurrentUser() {
-        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    private UserContext buildUserContext() {
+    public List<RecipeResponseDTO> searchRecipes(RecipeSearchRequestDTO request) {
         User user = getCurrentUser();
+
         Set<Long> fridgeIngredientIds = userFridgeRepository.findByUser(user)
                 .stream()
-                .map(uf -> uf.getIngredient().getId())
+                .map(userFridge -> userFridge.getIngredient().getId())
                 .collect(Collectors.toSet());
+
         Set<Long> userAllergyIds = userAllergyRepository.findByUser(user)
                 .stream()
                 .map(ua -> ua.getAllergy().getId())
                 .collect(Collectors.toSet());
-        return new UserContext(user, fridgeIngredientIds, userAllergyIds);
-    }
-
-    private record UserContext(User user, Set<Long> fridgeIngredientIds, Set<Long> userAllergyIds) {}
-
-    public List<RecipeResponseDTO> searchRecipes(RecipeSearchRequestDTO request) {
-        UserContext ctx = buildUserContext();
 
         int maxMissing = request.getMaxMissingIngredients() != null
                 ? request.getMaxMissingIngredients()
                 : 0;
 
-        Recipe.DietType effectiveDietType = request.getDietType() == Recipe.DietType.NORMAL
-                ? null
-                : request.getDietType();
-
+        Recipe.DietType effectiveDietType = request.getDietType();
         if (effectiveDietType == null) {
-            UserPreferences prefs = userPreferencesRepository.findByUser(ctx.user()).orElse(null);
+            UserPreferences prefs = userPreferencesRepository.findByUser(user).orElse(null);
             if (prefs != null) {
                 if (Boolean.TRUE.equals(prefs.getIsVegan())) {
                     effectiveDietType = Recipe.DietType.VEGAN;
@@ -76,14 +65,15 @@ public class RecipeService {
             }
         }
 
-        final Recipe.DietType finalDietType = effectiveDietType;
+        final Recipe.DietType finalDietType =
+                effectiveDietType == Recipe.DietType.NORMAL ? null : effectiveDietType;
 
         return recipeRepository.findAllWithIngredients()
                 .stream()
                 .filter(recipe -> matchesMealType(recipe, request.getMealType()))
                 .filter(recipe -> matchesDietType(recipe, finalDietType))
-                .filter(recipe -> countMissingIngredients(recipe, ctx.fridgeIngredientIds()) <= maxMissing)
-                .map(recipe -> mapToDTO(recipe, ctx.fridgeIngredientIds(), ctx.userAllergyIds()))
+                .filter(recipe -> countMissingIngredients(recipe, fridgeIngredientIds) <= maxMissing)
+                .map(recipe -> mapToDTO(recipe, fridgeIngredientIds, userAllergyIds))
                 .collect(Collectors.toList());
     }
 
@@ -126,7 +116,7 @@ public class RecipeService {
                 .stream()
                 .map(ri -> ri.getIngredient().getAllergen())
                 .filter(allergen -> allergen != null && userAllergyIds.contains(allergen.getId()))
-                .map(Allergy::getName)
+                .map(allergen -> allergen.getName())
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -157,21 +147,33 @@ public class RecipeService {
     }
 
     public RecipeResponseDTO getRecipeById(Long id) {
-        UserContext ctx = buildUserContext();
+        User user = getCurrentUser();
+
+        Set<Long> fridgeIngredientIds = userFridgeRepository.findByUser(user)
+                .stream()
+                .map(userFridge -> userFridge.getIngredient().getId())
+                .collect(Collectors.toSet());
+
+        Set<Long> userAllergyIds = userAllergyRepository.findByUser(user)
+                .stream()
+                .map(ua -> ua.getAllergy().getId())
+                .collect(Collectors.toSet());
+
         Recipe recipe = recipeRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Recipe not found"));
-        return mapToDTO(recipe, ctx.fridgeIngredientIds(), ctx.userAllergyIds());
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
+
+        return mapToDTO(recipe, fridgeIngredientIds, userAllergyIds);
     }
 
     public void markCooked(Long recipeId, List<String> consumedIngredientNames) {
         User user = getCurrentUser();
 
         Recipe recipe = recipeRepository.findById(recipeId)
-                .orElseThrow(() -> new NotFoundException("Recipe not found"));
+                .orElseThrow(() -> new RuntimeException("Recipe not found"));
 
-        Map<String, Long> nameToId = recipe.getRecipeIngredients()
+        java.util.Map<String, Long> nameToId = recipe.getRecipeIngredients()
                 .stream()
-                .collect(Collectors.toMap(
+                .collect(java.util.stream.Collectors.toMap(
                         ri -> ri.getIngredient().getName(),
                         ri -> ri.getIngredient().getId(),
                         (a, b) -> a
@@ -185,4 +187,5 @@ public class RecipeService {
             }
         });
     }
+
 }
