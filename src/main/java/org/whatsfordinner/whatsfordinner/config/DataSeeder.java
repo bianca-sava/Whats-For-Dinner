@@ -40,8 +40,8 @@ public class DataSeeder implements CommandLineRunner {
         Ingredient oil         = seedIngredient("oil",          Ingredient.Category.OTHER,     Ingredient.Unit.ML,        true,  null);
         Ingredient sugar       = seedIngredient("sugar",        Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,     true,  null);
         Ingredient butter      = seedIngredient("butter",       Ingredient.Category.DAIRY,     Ingredient.Unit.GRAMS,     false, lactose);
-        Ingredient soySauce    = seedIngredient("soy sauce",    Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON,true,  soy);
-        Ingredient garlic      = seedIngredient("garlic",       Ingredient.Category.VEGETABLE, Ingredient.Unit.PIECES,    true,  null);
+        Ingredient soySauce    = seedIngredient("soy sauce",    Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON,false,  soy);
+        Ingredient garlic      = seedIngredient("garlic",       Ingredient.Category.VEGETABLE, Ingredient.Unit.PIECES,    false,  null);
 
         // --- Dairy ---
         Ingredient milk        = seedIngredient("milk",         Ingredient.Category.DAIRY,     Ingredient.Unit.ML,        false, lactose);
@@ -52,7 +52,7 @@ public class DataSeeder implements CommandLineRunner {
         Ingredient flour       = seedIngredient("flour",        Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,     false, gluten);
         Ingredient pasta       = seedIngredient("pasta",        Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,     false, gluten);
         Ingredient rice        = seedIngredient("rice",         Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,     false, null);
-        Ingredient breadcrumbs = seedIngredient("breadcrumbs",  Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,     true,  gluten);
+        Ingredient breadcrumbs = seedIngredient("breadcrumbs",  Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,     false,  gluten);
         Ingredient oats        = seedIngredient("oats",         Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,     false, gluten);
         Ingredient wildRice       = seedIngredient("wild rice",        Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,      false, null);
         Ingredient orzo           = seedIngredient("orzo",             Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,      false, gluten);
@@ -70,10 +70,10 @@ public class DataSeeder implements CommandLineRunner {
         Ingredient groundTurkey   = seedIngredient("ground turkey",    Ingredient.Category.MEAT,      Ingredient.Unit.GRAMS,      false, null);
         Ingredient sausage        = seedIngredient("sausage",          Ingredient.Category.MEAT,      Ingredient.Unit.GRAMS,      false, null);
         Ingredient shrimp         = seedIngredient("shrimp",           Ingredient.Category.MEAT,      Ingredient.Unit.GRAMS,      false, shellfish);
-        Ingredient cannedChickpeas= seedIngredient("canned chickpeas", Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      true,  null);
-        Ingredient cannedBlackBeans=seedIngredient("canned black beans",Ingredient.Category.OTHER,    Ingredient.Unit.GRAMS,      true,  null);
-        Ingredient cannedWhiteBeans=seedIngredient("canned white beans",Ingredient.Category.OTHER,    Ingredient.Unit.GRAMS,      true,  null);
-        Ingredient greenLentils   = seedIngredient("green lentils",    Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      true,  null);
+        Ingredient cannedChickpeas= seedIngredient("canned chickpeas", Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      false,  null);
+        Ingredient cannedBlackBeans=seedIngredient("canned black beans",Ingredient.Category.OTHER,    Ingredient.Unit.GRAMS,      false,  null);
+        Ingredient cannedWhiteBeans=seedIngredient("canned white beans",Ingredient.Category.OTHER,    Ingredient.Unit.GRAMS,      false,  null);
+        Ingredient greenLentils   = seedIngredient("green lentils",    Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      false,  null);
         Ingredient tofu           = seedIngredient("tofu",             Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      false, soy);
         Ingredient ricotta        = seedIngredient("ricotta",          Ingredient.Category.DAIRY,     Ingredient.Unit.GRAMS,      false, lactose);
 
@@ -89,44 +89,44 @@ public class DataSeeder implements CommandLineRunner {
         Ingredient celery         = seedIngredient("celery",           Ingredient.Category.VEGETABLE, Ingredient.Unit.PIECES,     false, null);
         Ingredient bellPepper     = seedIngredient("bell pepper",      Ingredient.Category.VEGETABLE, Ingredient.Unit.PIECES,     false, null);
         Ingredient zucchini       = seedIngredient("zucchini",         Ingredient.Category.VEGETABLE, Ingredient.Unit.PIECES,     false, null);
-        Ingredient corn           = seedIngredient("canned corn",      Ingredient.Category.VEGETABLE, Ingredient.Unit.GRAMS,      true,  null);
-        Ingredient diceGreenChiles= seedIngredient("diced green chiles",Ingredient.Category.VEGETABLE,Ingredient.Unit.GRAMS,      true,  null);
+        Ingredient corn           = seedIngredient("canned corn",      Ingredient.Category.VEGETABLE, Ingredient.Unit.GRAMS,      false,  null);
+        Ingredient diceGreenChiles= seedIngredient("diced green chiles",Ingredient.Category.VEGETABLE,Ingredient.Unit.GRAMS,      false,  null);
         Ingredient kale           = seedIngredient("kale",             Ingredient.Category.VEGETABLE, Ingredient.Unit.GRAMS,      false, null);
         Ingredient mushrooms      = seedIngredient("mushrooms",        Ingredient.Category.VEGETABLE, Ingredient.Unit.GRAMS,      false, null);
         Ingredient sweetPotato    = seedIngredient("sweet potato",     Ingredient.Category.VEGETABLE, Ingredient.Unit.PIECES,     false, null);
-        Ingredient crushedTomatoes= seedIngredient("crushed tomatoes", Ingredient.Category.VEGETABLE, Ingredient.Unit.GRAMS,      true,  null);
+        Ingredient crushedTomatoes= seedIngredient("crushed tomatoes", Ingredient.Category.VEGETABLE, Ingredient.Unit.GRAMS,      false,  null);
 
         // --- Other ---
         Ingredient chickenBroth = seedIngredient("chicken broth", Ingredient.Category.OTHER,  Ingredient.Unit.ML,        false, null);
         Ingredient lemon       = seedIngredient("lemon",        Ingredient.Category.FRUIT,     Ingredient.Unit.PIECES,    false, null);
         Ingredient banana      = seedIngredient("banana",       Ingredient.Category.FRUIT,     Ingredient.Unit.PIECES,    false, null);
-        Ingredient vegetableBroth = seedIngredient("vegetable broth",  Ingredient.Category.OTHER,     Ingredient.Unit.ML,         true,  null);
-        Ingredient coconutMilk    = seedIngredient("coconut milk",     Ingredient.Category.OTHER,     Ingredient.Unit.ML,         true,  null);
-        Ingredient redCurryPaste  = seedIngredient("red curry paste",  Ingredient.Category.SPICE,     Ingredient.Unit.TABLESPOON, true,  null);
+        Ingredient vegetableBroth = seedIngredient("vegetable broth",  Ingredient.Category.OTHER,     Ingredient.Unit.ML,         false,  null);
+        Ingredient coconutMilk    = seedIngredient("coconut milk",     Ingredient.Category.OTHER,     Ingredient.Unit.ML,         false,  null);
+        Ingredient redCurryPaste  = seedIngredient("red curry paste",  Ingredient.Category.SPICE,     Ingredient.Unit.TABLESPOON, false,  null);
         Ingredient cumin          = seedIngredient("cumin",            Ingredient.Category.SPICE,     Ingredient.Unit.TEASPOON,   true,  null);
         Ingredient paprika        = seedIngredient("paprika",          Ingredient.Category.SPICE,     Ingredient.Unit.TEASPOON,   true,  null);
         Ingredient chiliPowder    = seedIngredient("chili powder",     Ingredient.Category.SPICE,     Ingredient.Unit.TEASPOON,   true,  null);
         Ingredient oregano        = seedIngredient("oregano",          Ingredient.Category.SPICE,     Ingredient.Unit.TEASPOON,   true,  null);
-        Ingredient peanutButter   = seedIngredient("peanut butter",    Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, true,  peanuts);
+        Ingredient peanutButter   = seedIngredient("peanut butter",    Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, false,  peanuts);
         Ingredient sesameOil      = seedIngredient("sesame oil",       Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, true,  null);
         Ingredient lime           = seedIngredient("lime",             Ingredient.Category.FRUIT,     Ingredient.Unit.PIECES,     false, null);
         Ingredient pumpkinCan     = seedIngredient("canned pumpkin",   Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      true,  null);
         Ingredient bakingPowder   = seedIngredient("baking powder",    Ingredient.Category.OTHER,     Ingredient.Unit.TEASPOON,   true,  null);
-        Ingredient nutritionalYeast=seedIngredient("nutritional yeast",Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, true,  null);
-        Ingredient enchiladadSauce= seedIngredient("enchilada sauce",  Ingredient.Category.OTHER,     Ingredient.Unit.ML,         true,  null);
-        Ingredient salsaJar       = seedIngredient("jarred salsa",     Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      true,  null);
-        Ingredient molasses       = seedIngredient("molasses",         Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, true,  null);
+        Ingredient nutritionalYeast=seedIngredient("nutritional yeast",Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, false,  null);
+        Ingredient enchiladaSauce= seedIngredient("enchilada sauce",  Ingredient.Category.OTHER,     Ingredient.Unit.ML,         false,  null);
+        Ingredient salsaJar       = seedIngredient("jarred salsa",     Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      false,  null);
+        Ingredient molasses       = seedIngredient("molasses",         Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, false,  null);
         Ingredient honey          = seedIngredient("honey",            Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, true,  null);
-        Ingredient tahini         = seedIngredient("tahini",           Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, true,  null);
-        Ingredient lemonJuice     = seedIngredient("lemon juice",      Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, true,  null);
+        Ingredient tahini         = seedIngredient("tahini",           Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, false,  null);
+        Ingredient lemonJuice     = seedIngredient("lemon juice",      Ingredient.Category.OTHER,     Ingredient.Unit.TABLESPOON, false,  null);
         Ingredient riceNoodles    = seedIngredient("rice noodles",     Ingredient.Category.GRAIN,     Ingredient.Unit.GRAMS,      false, null);
         Ingredient brownSugar     = seedIngredient("brown sugar",      Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      true,  null);
-        Ingredient chocolateChips = seedIngredient("chocolate chips",  Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      true,  null);
-        Ingredient cocoaPowder    = seedIngredient("cocoa powder",     Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      true,  null);
+        Ingredient chocolateChips = seedIngredient("chocolate chips",  Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      false,  null);
+        Ingredient cocoaPowder    = seedIngredient("cocoa powder",     Ingredient.Category.OTHER,     Ingredient.Unit.GRAMS,      false,  null);
         Ingredient vanillaExtract = seedIngredient("vanilla extract",  Ingredient.Category.OTHER,     Ingredient.Unit.TEASPOON,   true,  null);
         Ingredient shreddedCheese = seedIngredient("shredded cheddar", Ingredient.Category.DAIRY,     Ingredient.Unit.GRAMS,      false, lactose);
-        Ingredient sourceCream    = seedIngredient("sour cream",       Ingredient.Category.DAIRY,     Ingredient.Unit.GRAMS,      false, lactose);
-        Ingredient ginger         = seedIngredient("ginger",           Ingredient.Category.SPICE,     Ingredient.Unit.TEASPOON,   true,  null);
+        Ingredient sourCream = seedIngredient("sour cream",       Ingredient.Category.DAIRY,     Ingredient.Unit.GRAMS,      false, lactose);
+        Ingredient ginger         = seedIngredient("ginger",           Ingredient.Category.SPICE,     Ingredient.Unit.TEASPOON,   false,  null);
 
         if (recipeRepository.count() == 0) {
 
@@ -552,7 +552,7 @@ public class DataSeeder implements CommandLineRunner {
                     RecipeIngredient.builder().recipe(chili).ingredient(cumin).quantity(2.0).isOptional(false).build(),
                     RecipeIngredient.builder().recipe(chili).ingredient(chiliPowder).quantity(2.0).isOptional(false).build(),
                     RecipeIngredient.builder().recipe(chili).ingredient(shreddedCheese).quantity(80.0).isOptional(true).build(),
-                    RecipeIngredient.builder().recipe(chili).ingredient(sourceCream).quantity(50.0).isOptional(true).build()
+                    RecipeIngredient.builder().recipe(chili).ingredient(sourCream).quantity(50.0).isOptional(true).build()
             ));
             recipeRepository.save(chili);
 
@@ -666,9 +666,9 @@ public class DataSeeder implements CommandLineRunner {
             enchiladaCasserole.setRecipeIngredients(List.of(
                     RecipeIngredient.builder().recipe(enchiladaCasserole).ingredient(chickenBreast).quantity(500.0).isOptional(false).build(),
                     RecipeIngredient.builder().recipe(enchiladaCasserole).ingredient(tortillas).quantity(8.0).isOptional(false).build(),
-                    RecipeIngredient.builder().recipe(enchiladaCasserole).ingredient(enchiladadSauce).quantity(400.0).isOptional(false).build(),
+                    RecipeIngredient.builder().recipe(enchiladaCasserole).ingredient(enchiladaSauce).quantity(400.0).isOptional(false).build(),
                     RecipeIngredient.builder().recipe(enchiladaCasserole).ingredient(shreddedCheese).quantity(200.0).isOptional(false).build(),
-                    RecipeIngredient.builder().recipe(enchiladaCasserole).ingredient(sourceCream).quantity(100.0).isOptional(true).build(),
+                    RecipeIngredient.builder().recipe(enchiladaCasserole).ingredient(sourCream).quantity(100.0).isOptional(true).build(),
                     RecipeIngredient.builder().recipe(enchiladaCasserole).ingredient(salsaJar).quantity(100.0).isOptional(true).build()
             ));
             recipeRepository.save(enchiladaCasserole);
@@ -699,7 +699,7 @@ public class DataSeeder implements CommandLineRunner {
                     RecipeIngredient.builder().recipe(whiteChickenChili).ingredient(onion).quantity(1.0).isOptional(false).build(),
                     RecipeIngredient.builder().recipe(whiteChickenChili).ingredient(garlic).quantity(2.0).isOptional(false).build(),
                     RecipeIngredient.builder().recipe(whiteChickenChili).ingredient(cumin).quantity(2.0).isOptional(false).build(),
-                    RecipeIngredient.builder().recipe(whiteChickenChili).ingredient(sourceCream).quantity(100.0).isOptional(false).build(),
+                    RecipeIngredient.builder().recipe(whiteChickenChili).ingredient(sourCream).quantity(100.0).isOptional(false).build(),
                     RecipeIngredient.builder().recipe(whiteChickenChili).ingredient(shreddedCheese).quantity(80.0).isOptional(true).build()
             ));
             recipeRepository.save(whiteChickenChili);
