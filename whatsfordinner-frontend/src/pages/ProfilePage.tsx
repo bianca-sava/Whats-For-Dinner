@@ -1,20 +1,11 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.tsx";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-
-interface Preferences {
-    isVegetarian: boolean;
-    isVegan: boolean;
-}
-
-interface Allergy {
-    id: number;
-    name: string;
-}
+import apiClient from "../api/client";
+import type { Allergy, Preferences } from "../types";
 
 export default function ProfilePage() {
-    const { token, logout } = useAuth();
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
     const [preferences, setPreferences] = useState<Preferences>({ isVegetarian: false, isVegan: false });
@@ -25,15 +16,13 @@ export default function ProfilePage() {
     const [savedPrefs, setSavedPrefs] = useState(false);
     const [togglingAllergyId, setTogglingAllergyId] = useState<number | null>(null);
 
-    const headers = { Authorization: `Bearer ${token}` };
-
     useEffect(() => {
         const init = async () => {
             try {
                 const [prefsRes, userAllergyRes, allAllergyRes] = await Promise.all([
-                    axios.get("http://localhost:8080/api/profile/preferences", { headers }),
-                    axios.get("http://localhost:8080/api/profile/allergies", { headers }),
-                    axios.get("http://localhost:8080/api/allergies", { headers }),
+                    apiClient.get("/api/profile/preferences"),
+                    apiClient.get("/api/profile/allergies"),
+                    apiClient.get("/api/allergies"),
                 ]);
                 setPreferences(prefsRes.data);
                 setUserAllergies(userAllergyRes.data);
@@ -52,7 +41,7 @@ export default function ProfilePage() {
         setSavingPrefs(true);
         setSavedPrefs(false);
         try {
-            await axios.put("http://localhost:8080/api/profile/preferences", updated, { headers });
+            await apiClient.put("/api/profile/preferences", updated);
             setSavedPrefs(true);
             setTimeout(() => setSavedPrefs(false), 2000);
         } catch {
@@ -76,10 +65,10 @@ export default function ProfilePage() {
         setTogglingAllergyId(allergy.id);
         try {
             if (hasAllergy(allergy.id)) {
-                await axios.delete(`http://localhost:8080/api/profile/allergies/${allergy.id}`, { headers });
+                await apiClient.delete(`/api/profile/allergies/${allergy.id}`);
                 setUserAllergies(prev => prev.filter(a => a.id !== allergy.id));
             } else {
-                await axios.post("http://localhost:8080/api/profile/allergies", { allergyId: allergy.id }, { headers });
+                await apiClient.post("/api/profile/allergies", { allergyId: allergy.id });
                 setUserAllergies(prev => [...prev, allergy]);
             }
         } catch {

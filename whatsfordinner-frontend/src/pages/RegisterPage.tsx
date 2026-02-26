@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.tsx";
-import axios from "axios";
+import apiClient from "../api/client";
 
 export default function RegisterPage() {
     const [email, setEmail] = useState("");
@@ -27,9 +27,8 @@ export default function RegisterPage() {
 
         setLoading(true);
         try {
-            await axios.post("http://localhost:8080/api/auth/register", { email, password });
-            // Auto-login after register, mark onboarding as not complete
-            const loginRes = await axios.post("http://localhost:8080/api/auth/login", { email, password });
+            await apiClient.post("/api/auth/register", { email, password });
+            const loginRes = await apiClient.post("/api/auth/login", { email, password });
             login(loginRes.data.token, false);
             navigate("/onboarding");
         } catch (err: any) {

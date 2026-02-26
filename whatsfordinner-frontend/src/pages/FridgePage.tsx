@@ -1,27 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useAuth } from "../context/AuthContext.tsx";
-import axios from "axios";
-
-interface FridgeItem {
-    id: number;
-    ingredientId: number;
-    ingredientName: string;
-    category: string;
-    isPantryItem: boolean;
-}
-
-interface Ingredient {
-    id: number;
-    name: string;
-    category: string;
-    isPantryItem: boolean;
-}
-
-interface ScannedIngredient {
-    ingredientId: number;
-    receiptName: string;
-    mappedName: string;
-}
+import apiClient from "../api/client";
+import type { FridgeItem, Ingredient, ScannedIngredient } from "../types";
 
 type View = "fridge" | "scanning" | "confirm";
 
@@ -36,7 +15,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function FridgePage() {
-    const { token } = useAuth();
     const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
     const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
     const [loading, setLoading] = useState(true);
@@ -54,11 +32,9 @@ export default function FridgePage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
 
-    const headers = { Authorization: `Bearer ${token}` };
-
     const fetchFridge = async () => {
         try {
-            const res = await axios.get("http://localhost:8080/api/fridge", { headers });
+            const res = await apiClient.get("/api/fridge");
             setFridgeItems(res.data);
             setLoadError("");
         } catch {
@@ -70,7 +46,7 @@ export default function FridgePage() {
 
     const fetchIngredients = async () => {
         try {
-            const res = await axios.get("http://localhost:8080/api/ingredients", { headers });
+            const res = await apiClient.get("/api/ingredients");
             setAllIngredients(res.data);
         } catch {
         }
@@ -101,7 +77,7 @@ export default function FridgePage() {
         setAddingId(ingredientId);
         setAddError("");
         try {
-            await axios.post("http://localhost:8080/api/fridge", { ingredientId }, { headers });
+            await apiClient.post("/api/fridge", { ingredientId });
             await fetchFridge();
         } catch {
             setAddError("Failed to add ingredient. Please try again.");
@@ -113,7 +89,7 @@ export default function FridgePage() {
     const removeItem = async (id: number) => {
         setRemoveError("");
         try {
-            await axios.delete(`http://localhost:8080/api/fridge/${id}`, { headers });
+            await apiClient.delete(`/api/fridge/${id}`);
             setFridgeItems(prev => prev.filter(i => i.id !== id));
         } catch {
             setRemoveError("Failed to remove item. Please try again.");
@@ -129,10 +105,9 @@ export default function FridgePage() {
 
         try {
             const base64 = await fileToBase64(file);
-            const res = await axios.post(
-                "http://localhost:8080/api/fridge/scan",
-                { base64Image: base64 },
-                { headers }
+            const res = await apiClient.post(
+                "/api/fridge/scan",
+                { base64Image: base64 }
             );
             setScannedItems(res.data);
             setSelectedIds(new Set(res.data.map((i: ScannedIngredient) => i.ingredientId)));
@@ -161,7 +136,7 @@ export default function FridgePage() {
         setAddingBulk(true);
         setScanError("");
         try {
-            await axios.post("http://localhost:8080/api/fridge/bulk", Array.from(selectedIds), { headers });
+            await apiClient.post("/api/fridge/bulk", Array.from(selectedIds));
             await fetchFridge();
             setView("fridge");
             setScannedItems([]);

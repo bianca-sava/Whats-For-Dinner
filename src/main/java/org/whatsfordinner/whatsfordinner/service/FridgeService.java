@@ -1,13 +1,14 @@
 package org.whatsfordinner.whatsfordinner.service;
 
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.whatsfordinner.whatsfordinner.dto.AddToFridgeRequestDTO;
 import org.whatsfordinner.whatsfordinner.dto.FridgeItemResponseDTO;
 import org.whatsfordinner.whatsfordinner.dto.ReceiptScanRequestDTO;
 import org.whatsfordinner.whatsfordinner.dto.ScannedIngredientDTO;
+import org.whatsfordinner.whatsfordinner.exception.NotFoundException;
 import org.whatsfordinner.whatsfordinner.model.Ingredient;
 import org.whatsfordinner.whatsfordinner.model.User;
 import org.whatsfordinner.whatsfordinner.model.UserFridge;
@@ -16,6 +17,7 @@ import org.whatsfordinner.whatsfordinner.repository.UserFridgeRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserRepository;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -29,9 +31,9 @@ public class FridgeService {
     private final AiReceiptScannerService aiReceiptScannerService;
 
     private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
     public List<ScannedIngredientDTO> scanReceipt(ReceiptScanRequestDTO request) {
@@ -47,13 +49,12 @@ public class FridgeService {
         }
 
         Ingredient ingredient = ingredientRepository.findById(request.getIngredientId())
-                .orElseThrow(() -> new RuntimeException("Ingredient not found"));
+                .orElseThrow(() -> new NotFoundException("Ingredient not found"));
 
         UserFridge fridgeItem = UserFridge.builder().user(user).ingredient(ingredient).build();
         UserFridge saved = userFridgeRepository.save(fridgeItem);
         return mapToDTO(saved);
     }
-
 
     public List<FridgeItemResponseDTO> getFridgeItems() {
         User user = getCurrentUser();
@@ -67,7 +68,7 @@ public class FridgeService {
     public void removeFromFridge(Long fridgeItemId) {
         User user = getCurrentUser();
         UserFridge fridgeItem = userFridgeRepository.findById(fridgeItemId)
-                .orElseThrow(() -> new RuntimeException("Fridge item not found"));
+                .orElseThrow(() -> new NotFoundException("Fridge item not found"));
 
         if (!fridgeItem.getUser().getId().equals(user.getId())) {
             throw new RuntimeException("Unauthorized");
@@ -85,6 +86,7 @@ public class FridgeService {
                 .build();
     }
 
+    @Transactional
     public List<FridgeItemResponseDTO> addMultipleToFridge(List<Long> ingredientIds) {
         User user = getCurrentUser();
 
@@ -94,7 +96,7 @@ public class FridgeService {
                     if (existing.isPresent()) return existing.get();
 
                     Ingredient ing = ingredientRepository.findById(id)
-                            .orElseThrow(() -> new RuntimeException("Ingredient not found: " + id));
+                            .orElseThrow(() -> new NotFoundException("Ingredient not found: " + id));
 
                     UserFridge newItem = UserFridge.builder()
                             .user(user)

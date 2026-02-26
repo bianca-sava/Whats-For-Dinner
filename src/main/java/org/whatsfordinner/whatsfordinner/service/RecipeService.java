@@ -68,7 +68,7 @@ public class RecipeService {
         final Recipe.DietType finalDietType =
                 effectiveDietType == Recipe.DietType.NORMAL ? null : effectiveDietType;
 
-        return recipeRepository.findAll()
+        return recipeRepository.findAllWithIngredients()
                 .stream()
                 .filter(recipe -> matchesMealType(recipe, request.getMealType()))
                 .filter(recipe -> matchesDietType(recipe, finalDietType))

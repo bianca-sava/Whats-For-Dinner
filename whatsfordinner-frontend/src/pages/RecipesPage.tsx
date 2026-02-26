@@ -1,28 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.tsx";
-import axios from "axios";
-
-interface RecipeIngredient {
-    ingredientName: string;
-    quantity: number;
-    unit: string;
-    isOptional: boolean;
-}
-
-interface Recipe {
-    id: number;
-    name: string;
-    description: string;
-    instructions: string;
-    prepTime: number;
-    servings: number;
-    mealType: string;
-    dietType: string;
-    ingredients: RecipeIngredient[];
-    missingIngredients: string[];
-    allergenWarnings: string[];
-}
+import apiClient from "../api/client";
+import type { Recipe } from "../types";
 
 const MEAL_TYPES = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
 const DIET_TYPES = ["NORMAL", "VEGETARIAN", "VEGAN"];
@@ -43,7 +22,6 @@ const DIET_LABELS: Record<string, string> = {
 
 
 export default function RecipesPage() {
-    const { token } = useAuth();
     const navigate = useNavigate();
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(false);
@@ -56,12 +34,10 @@ export default function RecipesPage() {
     const [dietType, setDietType] = useState<string | null>(null);
     const [maxMissing, setMaxMissing] = useState<number>(0);
 
-    const headers = { Authorization: `Bearer ${token}` };
-
     useEffect(() => {
         const fetchPrefs = async () => {
             try {
-                const res = await axios.get("http://localhost:8080/api/profile/preferences", { headers });
+                const res = await apiClient.get("/api/profile/preferences");
                 const { isVegan, isVegetarian } = res.data;
                 if (isVegan) setDietType("VEGAN");
                 else if (isVegetarian) setDietType("VEGETARIAN");
@@ -79,14 +55,13 @@ export default function RecipesPage() {
         setSearched(true);
         setSearchError("");
         try {
-            const res = await axios.post(
-                "http://localhost:8080/api/recipes/search",
+            const res = await apiClient.post(
+                "/api/recipes/search",
                 {
                     mealType: mealType ?? undefined,
-                    dietType: dietType ?? "NORMAL",
+                    dietType: dietType ?? undefined,
                     maxMissingIngredients: maxMissing,
-                },
-                { headers }
+                }
             );
             setRecipes(res.data);
         } catch {

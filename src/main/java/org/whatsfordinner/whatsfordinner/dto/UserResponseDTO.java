@@ -16,4 +16,5 @@ public class UserResponseDTO {
     private String email;
     private String firstName;
     private Boolean hasCompletedOnboarding;
+    private Integer defaultServings;
 }

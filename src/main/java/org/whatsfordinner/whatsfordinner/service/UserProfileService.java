@@ -4,9 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.whatsfordinner.whatsfordinner.dto.AddAllergyRequestDTO;
-import org.whatsfordinner.whatsfordinner.dto.UserResponseDTO;
 import org.whatsfordinner.whatsfordinner.dto.AllergyResponseDTO;
 import org.whatsfordinner.whatsfordinner.dto.UserPreferencesDTO;
+import org.whatsfordinner.whatsfordinner.dto.UserResponseDTO;
+import org.whatsfordinner.whatsfordinner.exception.NotFoundException;
 import org.whatsfordinner.whatsfordinner.model.Allergy;
 import org.whatsfordinner.whatsfordinner.model.User;
 import org.whatsfordinner.whatsfordinner.model.UserAllergy;
@@ -17,6 +18,7 @@ import org.whatsfordinner.whatsfordinner.repository.UserPreferencesRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserRepository;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,9 +31,9 @@ public class UserProfileService {
     private final UserAllergyRepository userAllergyRepository;
 
     private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
     public UserResponseDTO getMe() {
@@ -41,6 +43,7 @@ public class UserProfileService {
                 .email(user.getEmail())
                 .hasCompletedOnboarding(Boolean.TRUE.equals(user.getHasCompletedOnboarding()))
                 .firstName(user.getFirstName())
+                .defaultServings(user.getDefaultServings())
                 .build();
     }
 
@@ -87,7 +90,7 @@ public class UserProfileService {
     public AllergyResponseDTO addAllergy(AddAllergyRequestDTO request) {
         User user = getCurrentUser();
         Allergy allergy = allergyRepository.findById(request.getAllergyId())
-                .orElseThrow(() -> new RuntimeException("Allergy not found"));
+                .orElseThrow(() -> new NotFoundException("Allergy not found"));
 
         UserAllergy userAllergy = UserAllergy.builder()
                 .user(user)

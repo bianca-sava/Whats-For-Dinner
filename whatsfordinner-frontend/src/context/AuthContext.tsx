@@ -1,13 +1,14 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
-import axios from "axios";
+import apiClient from "../api/client";
 
 interface AuthContextType {
     token: string | null;
     userName: string | null;
+    defaultServings: number;
     login: (token: string, completedOnboarding: boolean) => void;
     logout: () => void;
-    completeOnboarding: () => void;
+    completeOnboarding: () => Promise<void>;
     refreshUserName: () => void;
     isAuthenticated: boolean;
     hasCompletedOnboarding: boolean;
@@ -25,21 +26,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [userName, setUserName] = useState<string | null>(
         localStorage.getItem("userName")
     );
+    const [defaultServings, setDefaultServings] = useState<number>(
+        parseInt(localStorage.getItem("defaultServings") ?? "2") || 2
+    );
+
+    const fetchAndStoreProfile = useCallback(() => {
+        apiClient
+            .get("/api/profile/me")
+            .then(res => {
+                const name = res.data.firstName ?? null;
+                const servings = res.data.defaultServings ?? 2;
+                setUserName(name);
+                setDefaultServings(servings);
+                if (name) localStorage.setItem("userName", name);
+                localStorage.setItem("defaultServings", String(servings));
+            })
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         if (!token) return;
-        axios
-            .get("http://localhost:8080/api/profile/me", {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            .then(res => {
-                const name = res.data.firstName ?? null;
-                setUserName(name);
-                if (name) localStorage.setItem("userName", name);
-            })
-            .catch(() => {
-            });
-    }, [token]);
+        fetchAndStoreProfile();
+    }, [token, fetchAndStoreProfile]);
 
     const login = (newToken: string, completedOnboarding: boolean) => {
         localStorage.setItem("token", newToken);
@@ -52,28 +60,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem("token");
         localStorage.removeItem("onboardingComplete");
         localStorage.removeItem("userName");
+        localStorage.removeItem("defaultServings");
         setToken(null);
         setHasCompletedOnboarding(false);
         setUserName(null);
+        setDefaultServings(2);
     };
 
     const refreshUserName = () => {
         if (!token) return;
-        axios
-            .get("http://localhost:8080/api/profile/me", {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            .then(res => {
-                const name = res.data.firstName ?? null;
-                setUserName(name);
-                if (name) localStorage.setItem("userName", name);
-            })
-            .catch(() => {});
+        fetchAndStoreProfile();
     };
 
-    const completeOnboarding = () => {
-        localStorage.setItem("onboardingComplete", "true");
-        setHasCompletedOnboarding(true);
+    const completeOnboarding = (): Promise<void> => {
+        return new Promise((resolve) => {
+            localStorage.setItem("onboardingComplete", "true");
+            setHasCompletedOnboarding(true);
+            resolve();
+        });
     };
 
     return (
@@ -81,6 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             value={{
                 token,
                 userName,
+                defaultServings,
                 login,
                 logout,
                 completeOnboarding,
