@@ -48,12 +48,10 @@ export default function RecipesPage() {
         fetchPrefs();
     }, []);
 
-    // Task 3: auto-search on first load once prefs are ready
     useEffect(() => {
         if (!prefsLoading) {
             search();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [prefsLoading]);
 
     const search = async () => {
@@ -75,7 +73,6 @@ export default function RecipesPage() {
         }
     };
 
-    // Task 4: clicking the same meal type again deselects it
     const toggleMealType = (type: string) => {
         setMealType(prev => (prev === type ? null : type));
     };

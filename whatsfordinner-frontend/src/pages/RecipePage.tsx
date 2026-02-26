@@ -15,7 +15,6 @@ const UNIT_LABELS: Record<string, string> = {
 function formatQuantity(quantity: number, unit: string): string {
     if (unit === "TASTE") return "to taste";
     const label = UNIT_LABELS[unit] ?? unit.toLowerCase();
-    // Round to max 2 decimal places, strip trailing zeros
     const rounded = Math.round(quantity * 100) / 100;
     const qty = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toString();
     return label ? `${qty} ${label}` : qty;
