@@ -19,13 +19,10 @@ const DIET_LABELS: Record<string, string> = {
     VEGAN: "Vegan",
 };
 
-
-
 export default function RecipesPage() {
     const navigate = useNavigate();
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(false);
-    const [searched, setSearched] = useState(false);
     const [searchError, setSearchError] = useState("");
     const [prefsLoading, setPrefsLoading] = useState(true);
     const [prefsError, setPrefsError] = useState("");
@@ -33,6 +30,7 @@ export default function RecipesPage() {
     const [mealType, setMealType] = useState<string | null>(null);
     const [dietType, setDietType] = useState<string | null>(null);
     const [maxMissing, setMaxMissing] = useState<number>(0);
+    const [nameQuery, setNameQuery] = useState<string>("");
 
     useEffect(() => {
         const fetchPrefs = async () => {
@@ -50,19 +48,24 @@ export default function RecipesPage() {
         fetchPrefs();
     }, []);
 
+    // Task 3: auto-search on first load once prefs are ready
+    useEffect(() => {
+        if (!prefsLoading) {
+            search();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [prefsLoading]);
+
     const search = async () => {
         setLoading(true);
-        setSearched(true);
         setSearchError("");
         try {
-            const res = await apiClient.post(
-                "/api/recipes/search",
-                {
-                    mealType: mealType ?? undefined,
-                    dietType: dietType ?? undefined,
-                    maxMissingIngredients: maxMissing,
-                }
-            );
+            const res = await apiClient.post("/api/recipes/search", {
+                mealType: mealType ?? undefined,
+                dietType: dietType ?? undefined,
+                maxMissingIngredients: maxMissing,
+                nameQuery: nameQuery.trim() || undefined,
+            });
             setRecipes(res.data);
         } catch {
             setRecipes([]);
@@ -72,10 +75,14 @@ export default function RecipesPage() {
         }
     };
 
-    const toggleDietType = (type: string) => {
-        setDietType(prev => prev === type ? null : type);
+    // Task 4: clicking the same meal type again deselects it
+    const toggleMealType = (type: string) => {
+        setMealType(prev => (prev === type ? null : type));
     };
 
+    const toggleDietType = (type: string) => {
+        setDietType(prev => (prev === type ? null : type));
+    };
 
     return (
         <div>
@@ -97,6 +104,22 @@ export default function RecipesPage() {
 
             {/* Filters */}
             <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
+
+                {/* Task 2: Search by name */}
+                <div className="mb-4">
+                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-2">
+                        Search by Name
+                    </label>
+                    <input
+                        type="text"
+                        placeholder="e.g. pasta, salad, soup..."
+                        value={nameQuery}
+                        onChange={e => setNameQuery(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && search()}
+                        className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-300"
+                    />
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
 
                     {/* Meal type */}
@@ -108,7 +131,7 @@ export default function RecipesPage() {
                             {MEAL_TYPES.map(type => (
                                 <button
                                     key={type}
-                                    onClick={() => setMealType(prev => prev === type ? null : type)}
+                                    onClick={() => toggleMealType(type)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                         mealType === type
                                             ? "bg-primary-500 text-white"
@@ -193,21 +216,8 @@ export default function RecipesPage() {
                 </div>
             )}
 
-            {/* Empty state — before search */}
-            {!loading && !searched && (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
-                        <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                        </svg>
-                    </div>
-                    <p className="text-gray-500 font-medium">Set your filters and search</p>
-                    <p className="text-sm text-gray-400 mt-1">We'll match recipes to what's in your fridge</p>
-                </div>
-            )}
-
             {/* No results */}
-            {!loading && searched && recipes.length === 0 && !searchError && (
+            {!loading && recipes.length === 0 && !searchError && (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
                         <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -273,7 +283,6 @@ export default function RecipesPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                     </svg>
                                 </button>
-
                             </div>
                         );
                     })}

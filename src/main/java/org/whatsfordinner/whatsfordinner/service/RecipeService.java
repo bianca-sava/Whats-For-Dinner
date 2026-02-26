@@ -78,8 +78,13 @@ public class RecipeService {
         final Recipe.DietType finalDietType =
                 effectiveDietType == Recipe.DietType.NORMAL ? null : effectiveDietType;
 
+        final String nameQuery = request.getNameQuery() != null
+                ? request.getNameQuery().trim().toLowerCase()
+                : "";
+
         return recipeRepository.findAllWithIngredients()
                 .stream()
+                .filter(recipe -> nameQuery.isEmpty() || recipe.getName().toLowerCase().contains(nameQuery))
                 .filter(recipe -> matchesMealType(recipe, request.getMealType()))
                 .filter(recipe -> matchesDietType(recipe, finalDietType))
                 .filter(recipe -> countMissingIngredients(recipe, fridgeIngredientIds) <= maxMissing)

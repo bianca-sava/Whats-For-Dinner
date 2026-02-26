@@ -14,4 +14,5 @@ public class RecipeSearchRequestDTO {
     private Recipe.MealType mealType;
     private Recipe.DietType dietType;
     private Integer maxMissingIngredients;
+    private String nameQuery;
 }
