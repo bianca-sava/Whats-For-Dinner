@@ -4,6 +4,61 @@ import { useNavigate } from "react-router-dom";
 import apiClient from "../api/client";
 import type { Allergy, Preferences } from "../types";
 
+function getDeviceType(): "ios" | "android" | "desktop" {
+    const ua = navigator.userAgent;
+    if (/iphone|ipad|ipod/i.test(ua)) return "ios";
+    if (/android/i.test(ua)) return "android";
+    return "desktop";
+}
+
+function isInStandaloneMode(): boolean {
+    return window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone === true;
+}
+
+export function InstallBanner() {
+    const [visible, setVisible] = useState(false);
+    const device = getDeviceType();
+
+    useEffect(() => {
+        const dismissed = localStorage.getItem("install_banner_dismissed");
+        if (!dismissed && !isInStandaloneMode()) {
+            const t = setTimeout(() => setVisible(true), 1500);
+            return () => clearTimeout(t);
+        }
+    }, []);
+
+    const dismiss = () => {
+        localStorage.setItem("install_banner_dismissed", "1");
+        setVisible(false);
+    };
+
+    if (!visible || device === "desktop") return null;
+
+    return (
+        <div className="fixed bottom-20 left-4 right-4 z-50 animate-fade-in">
+            <div className="bg-gray-900 text-white rounded-2xl px-4 py-3.5 shadow-xl flex items-start gap-3">
+                <span className="text-xl mt-0.5">📲</span>
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">Add to Home Screen</p>
+                    {device === "ios" ? (
+                        <p className="text-xs text-gray-300 mt-0.5">
+                            Tap <span className="font-semibold text-white">Share</span> then <span className="font-semibold text-white">"Add to Home Screen"</span>
+                        </p>
+                    ) : (
+                        <p className="text-xs text-gray-300 mt-0.5">
+                            Tap the <span className="font-semibold text-white">⋮ menu</span> then <span className="font-semibold text-white">"Add to Home screen"</span>
+                        </p>
+                    )}
+                </div>
+                <button onClick={dismiss} className="text-gray-400 hover:text-white text-lg leading-none flex-shrink-0 mt-0.5">
+                    ×
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function ProfilePage() {
     const { logout } = useAuth();
     const navigate = useNavigate();
@@ -15,6 +70,9 @@ export default function ProfilePage() {
     const [savingPrefs, setSavingPrefs] = useState(false);
     const [savedPrefs, setSavedPrefs] = useState(false);
     const [togglingAllergyId, setTogglingAllergyId] = useState<number | null>(null);
+
+    const device = getDeviceType();
+    const alreadyInstalled = isInStandaloneMode();
 
     useEffect(() => {
         const init = async () => {
@@ -33,7 +91,6 @@ export default function ProfilePage() {
                 setLoading(false);
             }
         };
-
         init();
     }, []);
 
@@ -165,6 +222,79 @@ export default function ProfilePage() {
                             </div>
                         );
                     })}
+                </div>
+            </div>
+
+            {/* Install App section */}
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
+                <div className="px-5 py-4 border-b border-gray-50">
+                    <h2 className="text-sm font-semibold text-gray-700">Install App</h2>
+                    <p className="text-xs text-gray-400 mt-0.5">Add What's for Dinner to your home screen</p>
+                </div>
+
+                <div className="px-5 py-4">
+                    {alreadyInstalled ? (
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <p className="text-sm text-gray-600">App already installed on your device 🎉</p>
+                        </div>
+                    ) : device === "ios" ? (
+                        <div className="space-y-3">
+                            <p className="text-xs text-gray-500 mb-3">Follow these steps to install on iPhone/iPad:</p>
+                            {[
+                                { step: "1", text: "Tap the Share button", detail: "at the bottom of Safari (the box with an arrow)" },
+                                { step: "2", text: "Scroll down and tap", detail: '"Add to Home Screen"' },
+                                { step: "3", text: "Tap Add", detail: "in the top right corner" },
+                            ].map(({ step, text, detail }) => (
+                                <div key={step} className="flex items-start gap-3">
+                                    <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                                        {step}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-700">{text}</p>
+                                        <p className="text-xs text-gray-400">{detail}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : device === "android" ? (
+                        <div className="space-y-3">
+                            <p className="text-xs text-gray-500 mb-3">Follow these steps to install on Android:</p>
+                            {[
+                                { step: "1", text: "Tap the menu button", detail: "the ⋮ icon in the top right of Chrome" },
+                                { step: "2", text: 'Tap "Add to Home screen"', detail: "or \"Install app\" if it appears" },
+                                { step: "3", text: "Tap Add", detail: "to confirm" },
+                            ].map(({ step, text, detail }) => (
+                                <div key={step} className="flex items-start gap-3">
+                                    <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                                        {step}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-700">{text}</p>
+                                        <p className="text-xs text-gray-400">{detail}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        // Desktop
+                        <div className="space-y-3">
+                            <p className="text-xs text-gray-500 mb-3">Open this app on your phone to install it:</p>
+                            <div className="flex items-start gap-3">
+                                <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                                    📱
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700">Use Chrome on Android or Safari on iPhone</p>
+                                    <p className="text-xs text-gray-400">Then follow the install instructions from your phone</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

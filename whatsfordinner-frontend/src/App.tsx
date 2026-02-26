@@ -7,7 +7,7 @@ import Navbar from "./components/Navbar";
 import FridgePage from "./pages/FridgePage";
 import RecipesPage from "./pages/RecipesPage";
 import RecipePage from "./pages/RecipePage";
-import ProfilePage from "./pages/ProfilePage";
+import ProfilePage, { InstallBanner } from "./pages/ProfilePage";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -16,6 +16,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
             <main className="max-w-5xl mx-auto px-4 py-6">
                 {children}
             </main>
+            <InstallBanner />
         </div>
     );
 }
@@ -34,7 +35,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
-            {/* Onboarding — must be logged in but hasn't completed quiz */}
+            {/* Onboarding */}
             <Route
                 path="/onboarding"
                 element={
