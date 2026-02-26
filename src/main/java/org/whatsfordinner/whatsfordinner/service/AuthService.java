@@ -9,7 +9,7 @@ import org.whatsfordinner.whatsfordinner.dto.LoginRequestDTO;
 import org.whatsfordinner.whatsfordinner.dto.OnboardingRequestDTO;
 import org.whatsfordinner.whatsfordinner.dto.RegisterRequestDTO;
 import org.whatsfordinner.whatsfordinner.dto.UserResponseDTO;
-import org.whatsfordinner.whatsfordinner.model.Allergy;
+import org.whatsfordinner.whatsfordinner.exception.NotFoundException;
 import org.whatsfordinner.whatsfordinner.model.User;
 import org.whatsfordinner.whatsfordinner.model.UserAllergy;
 import org.whatsfordinner.whatsfordinner.model.UserPreferences;
@@ -20,6 +20,7 @@ import org.whatsfordinner.whatsfordinner.repository.UserRepository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -69,9 +70,9 @@ public class AuthService {
 
     @Transactional
     public void completeOnboarding(OnboardingRequestDTO request) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -90,7 +91,7 @@ public class AuthService {
         if (request.getAllergyIds() != null && !request.getAllergyIds().isEmpty()) {
             List<UserAllergy> userAllergies = request.getAllergyIds().stream()
                     .map(id -> allergyRepository.findById(id)
-                            .orElseThrow(() -> new RuntimeException("Allergy not found: " + id)))
+                            .orElseThrow(() -> new NotFoundException("Allergy not found: " + id)))
                     .map(allergy -> UserAllergy.builder()
                             .user(user)
                             .allergy(allergy)

@@ -1,27 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import apiClient from "../api/client";
-
-
-interface FridgeItem {
-    id: number;
-    ingredientId: number;
-    ingredientName: string;
-    category: string;
-    isPantryItem: boolean;
-}
-
-interface Ingredient {
-    id: number;
-    name: string;
-    category: string;
-    isPantryItem: boolean;
-}
-
-interface ScannedIngredient {
-    ingredientId: number;
-    receiptName: string;
-    mappedName: string;
-}
+import type { FridgeItem, Ingredient, ScannedIngredient } from "../types";
 
 type View = "fridge" | "scanning" | "confirm";
 

@@ -2,6 +2,7 @@ package org.whatsfordinner.whatsfordinner.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.whatsfordinner.whatsfordinner.exception.NotFoundException;
 import org.whatsfordinner.whatsfordinner.model.Ingredient;
 import org.whatsfordinner.whatsfordinner.repository.IngredientRepository;
 
@@ -19,7 +20,7 @@ public class IngredientService {
 
     public Ingredient getIngredientById(Long id) {
         return ingredientRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ingredient not found"));
+                .orElseThrow(() -> new NotFoundException("Ingredient not found"));
     }
 
     public Ingredient createIngredient(Ingredient ingredient) {
@@ -28,7 +29,7 @@ public class IngredientService {
 
     public Ingredient updateIngredient(Long id, Ingredient ingredient) {
         Ingredient existing = ingredientRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ingredient not found"));
+                .orElseThrow(() -> new NotFoundException("Ingredient not found"));
 
         existing.setName(ingredient.getName());
         existing.setCategory(ingredient.getCategory());
@@ -39,9 +40,8 @@ public class IngredientService {
 
     public void deleteIngredient(Long id) {
         if (!ingredientRepository.existsById(id)) {
-            throw new RuntimeException("Ingredient not found");
+            throw new NotFoundException("Ingredient not found");
         }
         ingredientRepository.deleteById(id);
     }
-
 }

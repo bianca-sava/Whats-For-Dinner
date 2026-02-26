@@ -7,7 +7,7 @@ interface AuthContextType {
     userName: string | null;
     login: (token: string, completedOnboarding: boolean) => void;
     logout: () => void;
-    completeOnboarding: () => void;
+    completeOnboarding: () => Promise<void>;
     refreshUserName: () => void;
     isAuthenticated: boolean;
     hasCompletedOnboarding: boolean;
@@ -68,8 +68,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const completeOnboarding = () => {
-        localStorage.setItem("onboardingComplete", "true");
-        setHasCompletedOnboarding(true);
+        return new Promise<void>((resolve) => {
+            localStorage.setItem("onboardingComplete", "true");
+            setHasCompletedOnboarding(true);
+            resolve();
+        });
     };
 
     return (

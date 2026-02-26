@@ -2,16 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.tsx";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../api/client";
-
-interface Preferences {
-    isVegetarian: boolean;
-    isVegan: boolean;
-}
-
-interface Allergy {
-    id: number;
-    name: string;
-}
+import type { Allergy, Preferences } from "../types";
 
 export default function ProfilePage() {
     const { logout } = useAuth();

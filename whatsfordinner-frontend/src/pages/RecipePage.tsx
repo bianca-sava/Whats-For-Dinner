@@ -1,28 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../api/client";
-
-interface RecipeIngredient {
-    ingredientName: string;
-    quantity: number;
-    unit: string;
-    isOptional: boolean;
-}
-
-interface Recipe {
-    id: number;
-    name: string;
-    description: string;
-    instructions: string;
-    prepTime: number;
-    servings: number;
-    mealType: string;
-    dietType: string;
-    imageUrl: string | null;
-    ingredients: RecipeIngredient[];
-    missingIngredients: string[];
-    allergenWarnings: string[];
-}
+import type { Recipe } from "../types";
 
 const UNIT_LABELS: Record<string, string> = {
     GRAMS: "g",
@@ -61,7 +40,7 @@ export default function RecipePage() {
     const [saveError, setSaveError] = useState("");
 
     useEffect(() => {
-        const fetch = async () => {
+        const fetchRecipe = async () => {
             try {
                 const res = await apiClient.get(`/api/recipes/${id}`);
                 setRecipe(res.data);
@@ -71,7 +50,7 @@ export default function RecipePage() {
                 setLoading(false);
             }
         };
-        fetch();
+        fetchRecipe();
     }, [id]);
 
     const openModal = () => {
