@@ -43,6 +43,7 @@ public class UserProfileService {
                 .email(user.getEmail())
                 .hasCompletedOnboarding(Boolean.TRUE.equals(user.getHasCompletedOnboarding()))
                 .firstName(user.getFirstName())
+                .defaultServings(user.getDefaultServings())
                 .build();
     }
 

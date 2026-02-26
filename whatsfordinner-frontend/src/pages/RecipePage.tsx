@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import type { Recipe } from "../types";
 
 const UNIT_LABELS: Record<string, string> = {
@@ -29,10 +30,12 @@ const DIET_LABELS: Record<string, string> = {
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { defaultServings } = useAuth();
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [selectedServings, setSelectedServings] = useState<number>(defaultServings);
 
     const [showModal, setShowModal] = useState(false);
     const [consumedIds, setConsumedIds] = useState<Set<string>>(new Set());
@@ -40,7 +43,7 @@ export default function RecipePage() {
     const [saveError, setSaveError] = useState("");
 
     useEffect(() => {
-        const fetchRecipe = async () => {
+        const fetch = async () => {
             try {
                 const res = await apiClient.get(`/api/recipes/${id}`);
                 setRecipe(res.data);
@@ -50,7 +53,7 @@ export default function RecipePage() {
                 setLoading(false);
             }
         };
-        fetchRecipe();
+        fetch();
     }, [id]);
 
     const openModal = () => {
@@ -94,6 +97,11 @@ export default function RecipePage() {
     };
 
     const cookableIngredients = recipe?.ingredients.filter(i => !i.isOptional) ?? [];
+
+    const scaleQuantity = (quantity: number): number => {
+        if (!recipe) return quantity;
+        return (quantity / recipe.servings) * selectedServings;
+    };
 
     if (loading) {
         return (
@@ -174,13 +182,34 @@ export default function RecipePage() {
                         { label: "Meal", value: MEAL_LABELS[recipe.mealType] },
                         { label: "Diet", value: DIET_LABELS[recipe.dietType] },
                         { label: "Prep time", value: `${recipe.prepTime} min` },
-                        { label: "Servings", value: `${recipe.servings}` },
                     ].map(({ label, value }) => (
                         <div key={label} className="bg-white rounded-xl px-4 py-2.5 shadow-sm">
                             <p className="text-xs text-gray-400">{label}</p>
                             <p className="text-sm font-semibold text-gray-700">{value}</p>
                         </div>
                     ))}
+
+                    {/* Servings selector */}
+                    <div className="bg-white rounded-xl px-4 py-2.5 shadow-sm">
+                        <p className="text-xs text-gray-400 mb-1">Servings</p>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                onClick={() => setSelectedServings(s => Math.max(1, s - 1))}
+                                className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-bold transition-all leading-none"
+                            >
+                                −
+                            </button>
+                            <span className="text-sm font-semibold text-gray-700 w-4 text-center">
+                                {selectedServings}
+                            </span>
+                            <button
+                                onClick={() => setSelectedServings(s => Math.min(20, s + 1))}
+                                className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-bold transition-all leading-none"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -218,7 +247,7 @@ export default function RecipePage() {
                                 {ing.isOptional && <span className="text-xs ml-1.5 text-gray-300">(optional)</span>}
                             </span>
                             <span className="text-sm font-medium text-gray-500 ml-4 flex-shrink-0">
-                                {formatQuantity(ing.quantity, ing.unit)}
+                                {formatQuantity(scaleQuantity(ing.quantity), ing.unit)}
                             </span>
                         </div>
                     ))}
