@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import apiClient from "../api/client";
-import { useAuth } from "../context/AuthContext";
 import type { Recipe } from "../types";
 
 const UNIT_LABELS: Record<string, string> = {
@@ -16,7 +15,8 @@ const UNIT_LABELS: Record<string, string> = {
 function formatQuantity(quantity: number, unit: string): string {
     if (unit === "TASTE") return "to taste";
     const label = UNIT_LABELS[unit] ?? unit.toLowerCase();
-    const qty = quantity % 1 === 0 ? quantity.toFixed(0) : quantity.toString();
+    const rounded = Math.round(quantity * 100) / 100;
+    const qty = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toString();
     return label ? `${qty} ${label}` : qty;
 }
 
@@ -30,12 +30,11 @@ const DIET_LABELS: Record<string, string> = {
 export default function RecipePage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { defaultServings } = useAuth();
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [selectedServings, setSelectedServings] = useState<number>(defaultServings);
+    const [multiplier, setMultiplier] = useState<number>(1);
 
     const [showModal, setShowModal] = useState(false);
     const [consumedIds, setConsumedIds] = useState<Set<string>>(new Set());
@@ -58,7 +57,6 @@ export default function RecipePage() {
 
     const openModal = () => {
         if (!recipe) return;
-
         const missing = new Set(recipe.missingIngredients);
         const preSelected = new Set(
             recipe.ingredients
@@ -99,8 +97,7 @@ export default function RecipePage() {
     const cookableIngredients = recipe?.ingredients.filter(i => !i.isOptional) ?? [];
 
     const scaleQuantity = (quantity: number): number => {
-        if (!recipe) return quantity;
-        return (quantity / recipe.servings) * selectedServings;
+        return quantity * multiplier;
     };
 
     if (loading) {
@@ -139,24 +136,6 @@ export default function RecipePage() {
                 Back to Recipes
             </button>
 
-            {/* Image */}
-            <div className="w-full h-56 rounded-2xl overflow-hidden mb-6 bg-gradient-to-br from-primary-100 to-orange-100 flex items-center justify-center">
-                {recipe.imageUrl ? (
-                    <img
-                        src={recipe.imageUrl}
-                        alt={recipe.name}
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <div className="flex flex-col items-center gap-2 text-primary-300">
-                        <svg className="w-14 h-14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                        </svg>
-                        <span className="text-sm font-medium">No image yet</span>
-                    </div>
-                )}
-            </div>
-
             {/* Header */}
             <div className="mb-6">
                 <div className="flex items-start justify-between gap-4">
@@ -177,7 +156,7 @@ export default function RecipePage() {
                 )}
 
                 {/* Meta */}
-                <div className="flex items-center gap-4 mt-4 flex-wrap">
+                <div className="flex items-stretch gap-4 mt-4 flex-wrap">
                     {[
                         { label: "Meal", value: MEAL_LABELS[recipe.mealType] },
                         { label: "Diet", value: DIET_LABELS[recipe.dietType] },
@@ -189,25 +168,29 @@ export default function RecipePage() {
                         </div>
                     ))}
 
-                    {/* Servings selector */}
-                    <div className="bg-white rounded-xl px-4 py-2.5 shadow-sm">
-                        <p className="text-xs text-gray-400 mb-1">Servings</p>
-                        <div className="flex items-center gap-1.5">
-                            <button
-                                onClick={() => setSelectedServings(s => Math.max(1, s - 1))}
-                                className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-bold transition-all leading-none"
-                            >
-                                −
-                            </button>
-                            <span className="text-sm font-semibold text-gray-700 w-4 text-center">
-                                {selectedServings}
-                            </span>
-                            <button
-                                onClick={() => setSelectedServings(s => Math.min(20, s + 1))}
-                                className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-bold transition-all leading-none"
-                            >
-                                +
-                            </button>
+                    {/* Servings slider — inline, wider card */}
+                    <div className="bg-white rounded-xl px-4 py-2.5 shadow-sm flex-1 min-w-[180px]">
+                        <div className="flex items-center justify-between mb-1">
+                            <p className="text-xs text-gray-400">Servings</p>
+                            <p className="text-sm font-semibold text-gray-700">
+                                {recipe.servings * multiplier}
+                                {multiplier > 1 && <span className="ml-1 text-primary-400 font-normal text-xs">({multiplier}x)</span>}
+                            </p>
+                        </div>
+                        <input
+                            type="range"
+                            min={1}
+                            max={4}
+                            step={1}
+                            value={multiplier}
+                            onChange={e => setMultiplier(Number(e.target.value))}
+                            className="w-full accent-primary-500"
+                        />
+                        <div className="flex justify-between text-xs text-gray-300 mt-0.5">
+                            <span>1x</span>
+                            <span>2x</span>
+                            <span>3x</span>
+                            <span>4x</span>
                         </div>
                     </div>
                 </div>

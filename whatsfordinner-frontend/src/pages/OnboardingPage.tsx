@@ -8,7 +8,6 @@ interface OnboardingData {
     lastName: string;
     isVegetarian: boolean;
     isVegan: boolean;
-    defaultServings: number;
     allergyIds: Set<number>;
 }
 
@@ -17,15 +16,13 @@ interface Allergy {
     name: string;
 }
 
-const STEPS = ["Name", "Diet", "Allergies", "Household"];
+const STEPS = ["Name", "Diet", "Allergies"];
 const TOTAL_STEPS = STEPS.length;
-const SERVING_OPTIONS = [1, 2, 3, 4, 5, 6];
 
 export default function OnboardingPage() {
     const navigate = useNavigate();
     const { completeOnboarding, refreshUserName } = useAuth();
 
-    // --- State ---
     const [allergies, setAllergies] = useState<Allergy[]>([]);
     const [step, setStep] = useState(0);
     const [submitting, setSubmitting] = useState(false);
@@ -34,11 +31,9 @@ export default function OnboardingPage() {
         lastName: "",
         isVegetarian: false,
         isVegan: false,
-        defaultServings: 2,
         allergyIds: new Set(),
     });
 
-    // --- Effects ---
     useEffect(() => {
         apiClient
             .get("/api/allergies")
@@ -46,7 +41,6 @@ export default function OnboardingPage() {
             .catch((err) => console.error("Failed to fetch allergies", err));
     }, []);
 
-    // --- Handlers ---
     const goNext = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
     const goBack = () => setStep((s) => Math.max(s - 1, 0));
 
@@ -62,9 +56,7 @@ export default function OnboardingPage() {
     const toggleDiet = (key: "isVegetarian" | "isVegan") => {
         setData((prev) => {
             const updated = { ...prev, [key]: !prev[key] };
-            // Logic: If you're Vegan, you are automatically Vegetarian.
             if (key === "isVegan" && updated.isVegan) updated.isVegetarian = true;
-            // Logic: If you stop being Vegetarian, you can't be Vegan.
             if (key === "isVegetarian" && !updated.isVegetarian) updated.isVegan = false;
             return updated;
         });
@@ -78,7 +70,7 @@ export default function OnboardingPage() {
                 lastName: data.lastName.trim() || null,
                 isVegetarian: data.isVegetarian,
                 isVegan: data.isVegan,
-                defaultServings: data.defaultServings,
+                defaultServings: 1,
                 allergyIds: Array.from(data.allergyIds),
             });
 
@@ -126,6 +118,7 @@ export default function OnboardingPage() {
 
                 {/* Card */}
                 <div className="bg-white rounded-3xl shadow-sm p-6 mb-4">
+
                     {/* Step 0 — Name */}
                     {step === 0 && (
                         <div>
@@ -189,11 +182,9 @@ export default function OnboardingPage() {
                                                 <p className="text-xs text-gray-400">{description}</p>
                                             </div>
                                         </div>
-                                        <div
-                                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                                                data[key] ? "bg-primary-500 border-primary-500" : "border-gray-300"
-                                            }`}
-                                        >
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                            data[key] ? "bg-primary-500 border-primary-500" : "border-gray-300"
+                                        }`}>
                                             {data[key] && (
                                                 <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -223,9 +214,9 @@ export default function OnboardingPage() {
                                                 active ? "border-red-300 bg-red-50" : "border-gray-100 bg-gray-50 hover:border-gray-200"
                                             }`}
                                         >
-                      <span className={`text-sm font-medium capitalize ${active ? "text-red-700" : "text-gray-600"}`}>
-                        {allergy.name}
-                      </span>
+                                            <span className={`text-sm font-medium capitalize ${active ? "text-red-700" : "text-gray-600"}`}>
+                                                {allergy.name}
+                                            </span>
                                             {active && (
                                                 <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -234,52 +225,6 @@ export default function OnboardingPage() {
                                         </button>
                                     );
                                 })}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Step 3 — Household */}
-                    {step === 3 && (
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-800 mb-1">How many people?</h2>
-                            <p className="text-sm text-gray-400 mb-5">Default serving size for your recipes.</p>
-
-                            <div className="grid grid-cols-3 gap-3 mb-6">
-                                {SERVING_OPTIONS.map((n) => (
-                                    <button
-                                        key={n}
-                                        onClick={() => setData((d) => ({ ...d, defaultServings: n }))}
-                                        className={`flex flex-col items-center justify-center py-4 rounded-2xl border-2 transition-all ${
-                                            data.defaultServings === n ? "border-primary-400 bg-primary-50" : "border-gray-100 bg-gray-50 hover:border-gray-200"
-                                        }`}
-                                    >
-                    <span className={`text-3xl font-bold ${data.defaultServings === n ? "text-primary-600" : "text-gray-700"}`}>
-                      {n}
-                    </span>
-                                        <span className="text-xs text-gray-400">{n === 1 ? "person" : "people"}</span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Summary */}
-                            <div className="bg-cream-50 rounded-2xl p-4 space-y-2">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Diet</span>
-                                    <span className="font-medium text-gray-800">
-                    {data.isVegan ? "Vegan" : data.isVegetarian ? "Vegetarian" : "None"}
-                  </span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-500">Allergies</span>
-                                    <span className="font-medium text-gray-800 text-right">
-                    {data.allergyIds.size === 0
-                        ? "None"
-                        : allergies
-                            .filter((a) => data.allergyIds.has(a.id))
-                            .map((a) => a.name)
-                            .join(", ")}
-                  </span>
-                                </div>
                             </div>
                         </div>
                     )}

@@ -18,7 +18,7 @@ import org.whatsfordinner.whatsfordinner.repository.UserPreferencesRepository;
 import org.whatsfordinner.whatsfordinner.repository.UserRepository;
 
 import java.util.List;
-
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,18 +39,25 @@ public class RecipeService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
-    public List<RecipeResponseDTO> searchRecipes(RecipeSearchRequestDTO request) {
-        User user = getCurrentUser();
-
-        Set<Long> fridgeIngredientIds = userFridgeRepository.findByUser(user)
+    private Set<Long> getFridgeIngredientIds(User user) {
+        return userFridgeRepository.findByUser(user)
                 .stream()
-                .map(userFridge -> userFridge.getIngredient().getId())
+                .map(uf -> uf.getIngredient().getId())
                 .collect(Collectors.toSet());
+    }
 
-        Set<Long> userAllergyIds = userAllergyRepository.findByUser(user)
+    private Set<Long> getUserAllergyIds(User user) {
+        return userAllergyRepository.findByUser(user)
                 .stream()
                 .map(ua -> ua.getAllergy().getId())
                 .collect(Collectors.toSet());
+    }
+
+    public List<RecipeResponseDTO> searchRecipes(RecipeSearchRequestDTO request) {
+        User user = getCurrentUser();
+
+        Set<Long> fridgeIngredientIds = getFridgeIngredientIds(user);
+        Set<Long> userAllergyIds = getUserAllergyIds(user);
 
         int maxMissing = request.getMaxMissingIngredients() != null
                 ? request.getMaxMissingIngredients()
@@ -71,13 +78,53 @@ public class RecipeService {
         final Recipe.DietType finalDietType =
                 effectiveDietType == Recipe.DietType.NORMAL ? null : effectiveDietType;
 
+        final String nameQuery = request.getNameQuery() != null
+                ? request.getNameQuery().trim().toLowerCase()
+                : "";
+
         return recipeRepository.findAllWithIngredients()
                 .stream()
+                .filter(recipe -> nameQuery.isEmpty() || recipe.getName().toLowerCase().contains(nameQuery))
                 .filter(recipe -> matchesMealType(recipe, request.getMealType()))
                 .filter(recipe -> matchesDietType(recipe, finalDietType))
                 .filter(recipe -> countMissingIngredients(recipe, fridgeIngredientIds) <= maxMissing)
                 .map(recipe -> mapToDTO(recipe, fridgeIngredientIds, userAllergyIds))
                 .collect(Collectors.toList());
+    }
+
+    public RecipeResponseDTO getRecipeById(Long id) {
+        User user = getCurrentUser();
+
+        Set<Long> fridgeIngredientIds = getFridgeIngredientIds(user);
+        Set<Long> userAllergyIds = getUserAllergyIds(user);
+
+        Recipe recipe = recipeRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Recipe not found"));
+
+        return mapToDTO(recipe, fridgeIngredientIds, userAllergyIds);
+    }
+
+    public void markCooked(Long recipeId, List<String> consumedIngredientNames) {
+        User user = getCurrentUser();
+
+        Recipe recipe = recipeRepository.findById(recipeId)
+                .orElseThrow(() -> new NotFoundException("Recipe not found"));
+
+        Map<String, Long> nameToId = recipe.getRecipeIngredients()
+                .stream()
+                .collect(Collectors.toMap(
+                        ri -> ri.getIngredient().getName(),
+                        ri -> ri.getIngredient().getId(),
+                        (a, b) -> a
+                ));
+
+        consumedIngredientNames.forEach(name -> {
+            Long ingredientId = nameToId.get(name);
+            if (ingredientId != null) {
+                userFridgeRepository.findByUserAndIngredientId(user, ingredientId)
+                        .ifPresent(userFridgeRepository::delete);
+            }
+        });
     }
 
     private boolean matchesMealType(Recipe recipe, Recipe.MealType mealType) {
@@ -148,47 +195,4 @@ public class RecipeService {
                 .allergenWarnings(allergenWarnings)
                 .build();
     }
-
-    public RecipeResponseDTO getRecipeById(Long id) {
-        User user = getCurrentUser();
-
-        Set<Long> fridgeIngredientIds = userFridgeRepository.findByUser(user)
-                .stream()
-                .map(userFridge -> userFridge.getIngredient().getId())
-                .collect(Collectors.toSet());
-
-        Set<Long> userAllergyIds = userAllergyRepository.findByUser(user)
-                .stream()
-                .map(ua -> ua.getAllergy().getId())
-                .collect(Collectors.toSet());
-
-        Recipe recipe = recipeRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Recipe not found"));
-
-        return mapToDTO(recipe, fridgeIngredientIds, userAllergyIds);
-    }
-
-    public void markCooked(Long recipeId, List<String> consumedIngredientNames) {
-        User user = getCurrentUser();
-
-        Recipe recipe = recipeRepository.findById(recipeId)
-                .orElseThrow(() -> new NotFoundException("Recipe not found"));
-
-        java.util.Map<String, Long> nameToId = recipe.getRecipeIngredients()
-                .stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        ri -> ri.getIngredient().getName(),
-                        ri -> ri.getIngredient().getId(),
-                        (a, b) -> a
-                ));
-
-        consumedIngredientNames.forEach(name -> {
-            Long ingredientId = nameToId.get(name);
-            if (ingredientId != null) {
-                userFridgeRepository.findByUserAndIngredientId(user, ingredientId)
-                        .ifPresent(userFridgeRepository::delete);
-            }
-        });
-    }
-
 }
